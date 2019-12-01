@@ -1,0 +1,27 @@
+image: registry.gitlab.com/christiantragesser/helm-repo:ci
+
+variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://localhost:2375
+    DOCKER_TLS_CERTDIR: ""
+    LOCAL_TAG: local/ip-update
+    EXT_TAG: $CI_REGISTRY/christiantragesser/ip-update
+    
+services:
+- name: docker:stable-dind
+
+stages:
+  - release
+
+release:
+  stage: release
+  script:
+    - VERSION=$(date +"%s")
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t $LOCAL_TAG -f $CI_PROJECT_DIR/Dockerfile .
+    - docker tag $LOCAL_TAG ${EXT_TAG}:latest 
+    - docker tag ${EXT_TAG}:latest ${EXT_TAG}:rel-${VERSION}
+    - docker push ${EXT_TAG}:latest | grep -e "The push refers to" -e latest
+    - docker push ${EXT_TAG}:rel-${VERSION} | grep -e "The push refers to" -e latest
+  only:
+    - master
