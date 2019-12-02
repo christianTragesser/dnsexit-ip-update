@@ -9,6 +9,8 @@ variables:
     
 services:
 - name: docker:stable-dind
+  entrypoint: ["env", "-u", "DOCKER_HOST"]
+  command: ["dockerd-entrypoint.sh"]
 
 stages:
   - release
