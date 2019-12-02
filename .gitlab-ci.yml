@@ -1,11 +1,11 @@
 image: registry.gitlab.com/christiantragesser/pypline-ci:dev3
 
 variables:
-    DOCKER_HOST: tcp://docker:2375
+    DOCKER_HOST: tcp://localhost:2375
     DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: ""
     LOCAL_TAG: local/ip-update
-    EXT_TAG: $CI_REGISTRY/christiantragesser/ip-update
+    EXT_TAG: $CI_REGISTRY/christiantragesser/dnsexit-ip-update
     
 services:
 - name: docker:stable-dind
@@ -16,6 +16,7 @@ stages:
 release:
   stage: release
   script:
+    - docker version
     - VERSION=$(date +"%s")
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker build -t $LOCAL_TAG -f $CI_PROJECT_DIR/Dockerfile .
