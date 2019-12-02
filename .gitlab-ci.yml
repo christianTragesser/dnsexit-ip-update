@@ -8,7 +8,7 @@ variables:
     EXT_TAG: $CI_REGISTRY/christiantragesser/ip-update
     
 services:
-- name: docker:19.03.1-dind
+- name: docker:stable-dind
 
 stages:
   - release
