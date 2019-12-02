@@ -1,4 +1,4 @@
-image: registry.gitlab.com/christiantragesser/helm-repo:ci
+image: registry.gitlab.com/christiantragesser/pypline-ci:3
 
 variables:
     DOCKER_DRIVER: overlay2
@@ -8,9 +8,7 @@ variables:
     EXT_TAG: $CI_REGISTRY/christiantragesser/ip-update
     
 services:
-- name: docker:stable-dind
-  entrypoint: ["env", "-u", "DOCKER_HOST"]
-  command: ["dockerd-entrypoint.sh"]
+- name: docker:dind
 
 stages:
   - release
