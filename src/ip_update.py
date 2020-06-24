@@ -9,4 +9,9 @@ def get_update_url(data_url):
 
 
 def evaluate_ip_sync(domain):
-    return False
+    egress_ip = requests.get('https://api.ipify.org').text
+    dns_ip = socket.gethostbyname(domain)
+    if egress_ip == dns_ip:
+        return True
+    else:
+        return False

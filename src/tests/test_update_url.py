@@ -29,8 +29,22 @@ def test_evaluate_ip_synced(mock_dns_lookup):
     #lookup current egress IP address
     #lookup current DNS A record for domain
     #compare current IP with DNS IP
-    #return true if current, false if update is needed
+    #return True when matching
     responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
 
     sync = evaluate_ip_sync('test.local')
     assert sync
+
+
+current_ip_resource = 'https://api.ipify.org'
+@responses.activate
+@mock.patch('socket.gethostbyname', return_value='4.4.4.4')
+def test_evaluate_ip_unsynced(mock_dns_lookup):
+    #lookup current egress IP address
+    #lookup current DNS A record for domain
+    #compare current IP with DNS IP
+    #return False when not matching
+    responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
+
+    sync = evaluate_ip_sync('test.local')
+    assert sync == False
