@@ -1,13 +1,16 @@
-FROM alpine:latest
+FROM python:3-alpine
 
-RUN apk add curl perl ca-certificates --no-cache && \
-  curl http://downloads.dnsexit.com/ipUpdate-1.71.tar.gz | tar -zx -C /opt && \
-  cp /opt/dnsexit/Http_get.pm /usr/lib/perl5/core_perl/
+COPY requirements/requirements.txt /tmp/requirements.txt
 
-ENV LOGIN="" PASS="" DOMAIN=""
+RUN apk add ca-certificates --no-cache && \
+    pip install -r /tmp/requirements.txt --no-cache-dir && \
+    addgroup -S -g 2222 dnsexit && \
+    adduser -S -u 2222 -g dnsexit dnsexit
 
-COPY dnsexit.conf /etc/
-COPY ipUpdate.sh /usr/local/bin/
+COPY src/*.py /opt/
 
-ENTRYPOINT ["ipUpdate.sh"]
-CMD ["sh"]
+RUN chmod 755 -R /opt
+
+USER dnsexit
+
+CMD ["/bin/sh", "-c", "python /opt/main.py"]

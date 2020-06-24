@@ -1,28 +1,42 @@
-image: registry.gitlab.com/christiantragesser/pypline-ci:dev3
+image: registry.gitlab.com/christiantragesser/dnsexit-ip-update:dev
 
 variables:
-    DOCKER_HOST: tcp://localhost:2375
+    DOCKER_HOST: tcp://docker:2375
     DOCKER_DRIVER: overlay2
     DOCKER_TLS_CERTDIR: ""
-    LOCAL_TAG: local/ip-update
+    LOCAL_TAG: local/dnsexit-ip-update
     EXT_TAG: $CI_REGISTRY/christiantragesser/dnsexit-ip-update
     
 services:
-- name: docker:stable-dind
+- name: docker:19.03.1-dind
 
 stages:
+  - test
   - release
 
-release:
-  stage: release
+test:
+  stage: test
+  tags:
+    - docker
   script:
-    - docker version
-    - VERSION=$(date +"%s")
+    - pytest
+    - pytest --cov=$CI_PROJECT_DIR/src --cov-report term
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker build -t $LOCAL_TAG -f $CI_PROJECT_DIR/Dockerfile .
     - docker tag $LOCAL_TAG ${EXT_TAG}:latest 
-    - docker tag ${EXT_TAG}:latest ${EXT_TAG}:rel-${VERSION}
+    - docker tag $LOCAL_TAG ${EXT_TAG}:master-${CI_COMMIT_SHORT_SHA}
     - docker push ${EXT_TAG}:latest | grep -e "The push refers to" -e latest
-    - docker push ${EXT_TAG}:rel-${VERSION} | grep -e "The push refers to" -e latest
+    - docker push ${EXT_TAG}:master-${CI_COMMIT_SHORT_SHA} | grep -e "The push refers to" -e latest
   only:
     - master
+
+release:
+  stage: release
+  tags:
+    - docker
+  script:
+    - docker version
+  only:
+    - tags
+  except:
+    - branches
