@@ -67,5 +67,5 @@ def test_update_dns_a_record():
     responses.add(responses.GET, current_ip_resource, body=ip)
     responses.add(responses.GET, update_query, status=200)
 
-    result = update_dns_a_record(update_url=update_url, user=user, password=password, domain=domain)
+    result = update_dns_a_record(update_fqdn=update_url, user=user, password=password, domain=domain)
     assert result == 200
