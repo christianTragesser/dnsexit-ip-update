@@ -18,4 +18,7 @@ def evaluate_ip_sync(domain):
 
 
 def update_dns_a_record(update_url, user, password, domain):
-    return False
+    ip = requests.get('https://api.ipify.org').text 
+    update_query = '{0:s}?login={1:s}&password={2:s}&host={3:s}&myip={4:s}'.format(update_url, user, password, domain, ip)
+    r = requests.get(update_query)
+    return r.status_code

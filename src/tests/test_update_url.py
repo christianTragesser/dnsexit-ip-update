@@ -36,6 +36,7 @@ def test_evaluate_ip_synced(mock_dns_lookup):
     assert sync
 
 
+current_ip_resource = 'https://api.ipify.org'
 @responses.activate
 @mock.patch('socket.gethostbyname', return_value='4.4.4.4')
 def test_evaluate_ip_unsynced(mock_dns_lookup):
@@ -43,7 +44,6 @@ def test_evaluate_ip_unsynced(mock_dns_lookup):
     #lookup current DNS A record for domain
     #compare current IP with DNS IP
     #return False when not matching
-    current_ip_resource = 'https://api.ipify.org'
     responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
 
     sync = evaluate_ip_sync('test.local')
@@ -56,8 +56,13 @@ def test_update_dns_a_record():
     #performs update query
     #reports update query result
     update_url = 'https://update.test.local/TestUpdate.sv'
-    responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
+    user = 'tester'
+    password = 'Hello123'
+    domain = 'test.local'
+    ip = '2.2.2.2'
+    update_query = '{0:s}?login={1:s}&password={2:s}&host={3:s}&myip={4:s}'.format(update_url, user, password, domain, ip)
+    responses.add(responses.GET, current_ip_resource, body=ip)
+    responses.add(responses.GET, update_query, status=200)
     
-    result = update_dns_a_record(update_url=update_url, user='tester',
-                                 password='Hello123', domain='test.local')
+    result = update_dns_a_record(update_url=update_url, user=user, password=password, domain=domain)
     assert result == 200
