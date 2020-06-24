@@ -1,0 +1,8 @@
+[flake8]
+max-line-length = 150
+max-doc-length = 200
+per-file-ignores =
+    *.py:W605
+    *.py:E402
+exclude =
+    ci.py
