@@ -15,3 +15,7 @@ def evaluate_ip_sync(domain):
         return True
     else:
         return False
+
+
+def update_dns_a_record(update_url, user, password, domain):
+    return False
