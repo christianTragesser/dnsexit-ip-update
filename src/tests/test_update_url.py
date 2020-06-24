@@ -17,7 +17,7 @@ def test_get_update_url():
     #retrieves update data
     #filters update URL from update data
     #returns update FQDN and path
-    responses.add(responses.GET, update_data, status=200)
+    responses.add(responses.GET, update_data_url, body=update_data)
 
     update_addr = get_update_url(update_data_url)
-    assert update_addr == 'update.test.local/TestUpdate.sv'
+    assert update_addr == 'https://update.test.local/TestUpdate.sv'
