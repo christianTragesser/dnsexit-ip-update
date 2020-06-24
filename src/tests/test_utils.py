@@ -3,9 +3,9 @@ import mock
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from ip_update import get_update_url
-from ip_update import evaluate_ip_sync
-from ip_update import update_dns_a_record
+from utils import get_update_url
+from utils import evaluate_ip_sync
+from utils import update_dns_a_record
 
 current_ip_resource = 'https://api.ipify.org'
 
