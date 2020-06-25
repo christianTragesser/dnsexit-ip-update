@@ -33,4 +33,11 @@ def update_dns_a_record(update_fqdn, user, password, domain):
 
 
 def validate_credentials(login, password):
-    return False
+    creds_validation_url = 'https://update.dnsexit.com/ipupdate/account_validate.jsp?login={}&password={}'.format(login, password)
+    r = requests.get(creds_validation_url)
+    if '0=OK' in r.text:
+        log.info('DNSExit IP Update credentials are valid.')
+        return True
+    else:
+        log.error('The provided DNSExit IP Update credentials are not valid, exiting.')
+        return False
