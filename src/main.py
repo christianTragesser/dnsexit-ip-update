@@ -23,11 +23,15 @@ https://github.com/christianTragesser/dnsexit-ip-update
 
 if login == '' or password == '' or domain == '':
     print(missing_acct_info)
-    log.error('DNSExit account info missing. Login, password, and domain must be provided.')
+    log.error('DNSExit account info missing. Login, password, and domain must be provided as environment variables.')
     exit(1)
 
 if __name__ == '__main__':
-    log.info('DNSExit account info found. login:{} domain:{}'.format(login, domain))
+    log.info('Using DNSExit info login:{} domain:{}'.format(login, domain))
+    if not utils.validate_credentials(login, password):
+        exit(1)
+    if not utils.validate_domain(login, domain):
+        exit(1)
     update_fqdn = utils.get_update_url(update_data_url)
     while True:
         if not utils.evaluate_ip_sync(domain):
