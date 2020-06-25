@@ -41,3 +41,14 @@ def validate_credentials(login, password):
     else:
         log.error('The provided DNSExit IP Update credentials are not valid, exiting.')
         return False
+
+
+def validate_domain(login, domain):
+    domain_validation_url = 'https://update.dnsexit.com/ipupdate/domains.jsp?login={}'.format(login)
+    r = requests.get(domain_validation_url)
+    if '0=' in r.text and domain in r.text:
+        log.info('{} domain is valid.'.format(domain))
+        return True
+    else:
+        log.error('{0:s} domain is invalid, {0:s} not found in {1:s} account.'.format(domain, login))
+        return False

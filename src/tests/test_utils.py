@@ -6,7 +6,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import get_update_url
 from utils import evaluate_ip_sync
 from utils import update_dns_a_record
-from utils import validate_credentials 
+from utils import validate_credentials
+from utils import validate_domain
 
 current_ip_resource = 'https://api.ipify.org'
 
@@ -112,3 +113,37 @@ def test_invalid_credentials(caplog):
     result = validate_credentials(login=login, password=password)
     assert not result
     assert 'The provided DNSExit IP Update credentials are not valid, exiting.' in caplog.text
+
+
+@responses.activate
+def test_valid_domain(caplog):
+    # takes in login and domain
+    # validates domain with DNSExit
+    # parse text response
+    # log domain is valid
+    # return true if domain is valid
+    login = 'tester'
+    domain = 'test.local'
+    domain_validation_url = 'https://update.dnsexit.com/ipupdate/domains.jsp?login={}'.format(login)
+    responses.add(responses.GET, domain_validation_url, body='\r\n\r\n0=test.local\r\n')
+
+    result = validate_domain(login=login, domain=domain)
+    assert result
+    assert 'test.local domain is valid.' in caplog.text
+
+
+@responses.activate
+def test_invalid_domain(caplog):
+    # takes in login and domain
+    # validates domain with DNSExit
+    # parse text response
+    # log domain is invalid
+    # return false if domain is invalid
+    login = 'tester'
+    domain = 'test.local'
+    domain_validation_url = 'https://update.dnsexit.com/ipupdate/domains.jsp?login={}'.format(login)
+    responses.add(responses.GET, domain_validation_url, body='\r\n\r\n4=test.local has no DNS found')
+
+    result = validate_domain(login=login, domain=domain)
+    assert not result
+    assert 'test.local domain is invalid, test.local not found in tester account.' in caplog.text
