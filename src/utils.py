@@ -30,3 +30,7 @@ def update_dns_a_record(update_fqdn, user, password, domain):
     r = requests.get(update_query)
     log.info('{} DNS A record has been updated to {}.'.format(domain, ip))
     return r.status_code
+
+
+def validate_credentials(login, password):
+    return False

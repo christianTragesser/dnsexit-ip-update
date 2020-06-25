@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import get_update_url
 from utils import evaluate_ip_sync
 from utils import update_dns_a_record
+from utils import validate_credentials 
 
 current_ip_resource = 'https://api.ipify.org'
 
@@ -77,3 +78,37 @@ def test_update_dns_a_record(caplog):
     result = update_dns_a_record(update_fqdn=update_url, user=user, password=password, domain=domain)
     assert result == 200
     assert 'test.local DNS A record has been updated to 2.2.2.2.' in caplog.text
+
+
+@responses.activate
+def test_valid_credentials(caplog):
+    # takes in login and password
+    # validates credentials with DNSExit
+    # parse text response
+    # log credentials are valid
+    # return true if credentials are valid
+    login = 'tester'
+    password = 'Hello123'
+    creds_validation_url = 'https://update.dnsexit.com/ipupdate/account_validate.jsp?login={}&password={}'.format(login, password)
+    responses.add(responses.GET, creds_validation_url, body='\r\n\r\n\r\n\r\n\r\n\r\n\r\n0=OK\r\n')
+
+    result = validate_credentials(login=login, password=password)
+    assert result
+    assert 'DNSExit IP Update credentials are valid.' in caplog.text
+
+
+@responses.activate
+def test_invalid_credentials(caplog):
+    # takes in login and password
+    # validates credentials with DNSExit
+    # parse text response
+    # log credentials are invalid
+    # return false if credentials are invalid
+    login = 'tester'
+    password = 'Hello123'
+    creds_validation_url = 'https://update.dnsexit.com/ipupdate/account_validate.jsp?login={}&password={}'.format(login, password)
+    responses.add(responses.GET, creds_validation_url, body='\r\n\r\n\r\n\r\n\r\n\r\n\r\n1=Password Invalid\r\n')
+
+    result = validate_credentials(login=login, password=password)
+    assert not result
+    assert 'The provided DNSExit IP Update credentials are not valid, exiting.' in caplog.text
