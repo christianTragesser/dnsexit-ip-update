@@ -11,7 +11,7 @@ current_ip_resource = 'https://api.ipify.org'
 
 
 @responses.activate
-def test_get_update_url():
+def test_get_update_url(caplog):
     # retrieves update data
     # filters update URL from update data
     # returns update FQDN and path
@@ -25,11 +25,12 @@ def test_get_update_url():
 
     update_addr = get_update_url(update_data_url)
     assert update_addr == 'https://update.test.local/TestUpdate.sv'
+    assert 'DNSExit update URL is https://test.local/TestUpdate.sv' in caplog.text
 
 
 @responses.activate
 @mock.patch('socket.gethostbyname', return_value='2.2.2.2')
-def test_evaluate_ip_synced(mock_dns_lookup):
+def test_evaluate_ip_synced(mock_dns_lookup, caplog):
     # lookup current egress IP address
     # lookup current DNS A record for domain
     # compare current IP with DNS IP
@@ -38,11 +39,14 @@ def test_evaluate_ip_synced(mock_dns_lookup):
 
     sync = evaluate_ip_sync('test.local')
     assert sync
+    assert 'Evaluating DNS A record for test.local' in caplog.text
+    assert 'egress 2.2.2.2 - dns IP 2.2.2.2' in caplog.text
+    assert 'DNS A record for test.local is up to date.' in caplog.text
 
 
 @responses.activate
 @mock.patch('socket.gethostbyname', return_value='4.4.4.4')
-def test_evaluate_ip_unsynced(mock_dns_lookup):
+def test_evaluate_ip_unsynced(mock_dns_lookup, caplog):
     # lookup current egress IP address
     # lookup current DNS A record for domain
     # compare current IP with DNS IP
@@ -51,10 +55,13 @@ def test_evaluate_ip_unsynced(mock_dns_lookup):
 
     sync = evaluate_ip_sync('test.local')
     assert not sync
+    assert 'Evaluating DNS A record for test.local:' in caplog.text
+    assert 'egress 2.2.2.2 - dns IP 4.4.4.4' in caplog.text
+    assert 'Updating test.local DNS A record.' in caplog.text
 
 
 @responses.activate
-def test_update_dns_a_record():
+def test_update_dns_a_record(caplog):
     # takes in update url, user, password, and domain
     # performs update query
     # reports update query result
@@ -69,3 +76,4 @@ def test_update_dns_a_record():
 
     result = update_dns_a_record(update_fqdn=update_url, user=user, password=password, domain=domain)
     assert result == 200
+    assert 'test.local DNS A record has been updated to 2.2.2.2.' in caplog.text

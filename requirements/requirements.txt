@@ -1,1 +1,2 @@
 requests==2.24.0
+python-json-logger==0.1.11
