@@ -28,5 +28,5 @@ def update_dns_a_record(update_fqdn, user, password, domain):
     ip = requests.get('https://api.ipify.org').text
     update_query = '{}?login={}&password={}&host={}&myip={}'.format(update_fqdn, user, password, domain, ip)
     r = requests.get(update_query)
-    print('{} DNS A record has been updated to {}.'.format(domain, ip))
+    log.info('{} DNS A record has been updated to {}.'.format(domain, ip))
     return r.status_code

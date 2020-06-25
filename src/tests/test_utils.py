@@ -25,7 +25,7 @@ def test_get_update_url(caplog):
 
     update_addr = get_update_url(update_data_url)
     assert update_addr == 'https://update.test.local/TestUpdate.sv'
-    assert 'DNSExit update URL is https://test.local/TestUpdate.sv' in caplog.text
+    assert 'DNSExit update URL is https://update.test.local/TestUpdate.sv' in caplog.text
 
 
 @responses.activate
@@ -40,7 +40,7 @@ def test_evaluate_ip_synced(mock_dns_lookup, caplog):
     sync = evaluate_ip_sync('test.local')
     assert sync
     assert 'Evaluating DNS A record for test.local' in caplog.text
-    assert 'egress 2.2.2.2 - dns IP 2.2.2.2' in caplog.text
+    assert 'egress 2.2.2.2 - dns 2.2.2.2' in caplog.text
     assert 'DNS A record for test.local is up to date.' in caplog.text
 
 
@@ -56,7 +56,7 @@ def test_evaluate_ip_unsynced(mock_dns_lookup, caplog):
     sync = evaluate_ip_sync('test.local')
     assert not sync
     assert 'Evaluating DNS A record for test.local:' in caplog.text
-    assert 'egress 2.2.2.2 - dns IP 4.4.4.4' in caplog.text
+    assert 'egress 2.2.2.2 - dns 4.4.4.4' in caplog.text
     assert 'Updating test.local DNS A record.' in caplog.text
 
 
