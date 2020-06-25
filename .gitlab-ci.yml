@@ -19,6 +19,7 @@ test:
   tags:
     - docker
   script:
+    - flake8 $CI_PROJECT_DIR/src 
     - pytest
     - pytest --cov=$CI_PROJECT_DIR/src --cov-report term
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
