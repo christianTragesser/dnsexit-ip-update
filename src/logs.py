@@ -10,7 +10,7 @@ def get_console_handler():
     return console_handler
 
 
-def logger(name='dnsexit-ip-update'):
+def logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     logger.addHandler(get_console_handler())

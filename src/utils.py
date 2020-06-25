@@ -2,7 +2,7 @@ import requests
 import socket
 import logs
 
-log = logs.logger()
+log = logs.logger('utils')
 
 
 def get_update_url(data_url):
