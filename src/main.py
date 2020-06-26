@@ -12,14 +12,14 @@ interval = int(os.environ['CHECK_INTERVAL']) if 'CHECK_INTERVAL' in os.environ e
 update_data_url = os.environ['UPDATE_DATA_URL'] if 'UPDATE_DATA_URL' in os.environ else 'https://www.dnsexit.com/ipupdate/dyndata.txt'
 
 if login == '' or password == '' or domain == '':
-    log.error('DNSExit account info missing. Login, password, and domain must be provided as environment variables.')
+    log.critical('DNSExit account info missing. Login, password, and domain must be provided as environment variables.')
     exit(1)
 
 
 def main(update_url, login, password, domain):
     sync_result = utils.evaluate_ip_sync(domain)
     if sync_result is None:
-        log.error('dnsexit-ip-update is not able to resolve {0:s} and should only be used to update existing DNS A records. Skipping update for {0:s}'.format(domain))
+        log.error('ERROR: dnsexit-ip-update is not able to resolve {0:s} and should only be used to update existing DNS A records. Skipping update for {0:s}'.format(domain))
     elif not sync_result:
         try:
             utils.update_dns_a_record(update_fqdn, login, password, domain)
@@ -29,7 +29,7 @@ def main(update_url, login, password, domain):
 
 
 if __name__ == '__main__':
-    log.info('init: Using DNSExit info login:{} domain:{}'.format(login, domain))
+    log.info('INFO: Using DNSExit info login:{} domain:{}'.format(login, domain))
     if not utils.validate_credentials(login, password):
         exit(1)
 

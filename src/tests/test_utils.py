@@ -27,7 +27,7 @@ def test_get_update_url(caplog):
 
     update_addr = get_update_url(update_data_url)
     assert update_addr == 'https://update.test.local/TestUpdate.sv'
-    assert 'init: DNSExit update URL is https://update.test.local/TestUpdate.sv' in caplog.text
+    assert 'DNSExit update URL is https://update.test.local/TestUpdate.sv' in caplog.text
 
 
 @responses.activate
@@ -70,7 +70,7 @@ def test_evaluate_ip_unsynced(mock_dns_lookup, caplog):
 
     sync = evaluate_ip_sync('test.local')
     assert not sync
-    assert 'Evaluating DNS A record for test.local:' in caplog.text
+    assert 'Evaluating DNS A record for test.local' in caplog.text
     assert 'egress 2.2.2.2 - dns 4.4.4.4' in caplog.text
     assert 'Updating test.local DNS A record.' in caplog.text
 
@@ -118,7 +118,7 @@ def test_valid_credentials(caplog):
 
     result = validate_credentials(login=login, password=password)
     assert result
-    assert 'init: DNSExit IP Update credentials are valid.' in caplog.text
+    assert 'DNSExit IP Update credentials are valid.' in caplog.text
 
 
 @responses.activate
@@ -135,7 +135,7 @@ def test_invalid_credentials(caplog):
 
     result = validate_credentials(login=login, password=password)
     assert not result
-    assert 'init: The provided DNSExit IP Update credentials are not valid, exiting.' in caplog.text
+    assert 'The provided DNSExit IP Update credentials are not valid, exiting.' in caplog.text
 
 
 @responses.activate
@@ -152,7 +152,7 @@ def test_valid_domain(caplog):
 
     result = validate_domain(login=login, domain=domain)
     assert result
-    assert 'init: test.local domain is valid.' in caplog.text
+    assert 'test.local domain is valid.' in caplog.text
 
 
 @responses.activate
@@ -169,4 +169,4 @@ def test_invalid_domain(caplog):
 
     result = validate_domain(login=login, domain=domain)
     assert not result
-    assert 'init: test.local domain is invalid, test.local not found in tester account.' in caplog.text
+    assert 'test.local domain is invalid, test.local not found in tester account.' in caplog.text
