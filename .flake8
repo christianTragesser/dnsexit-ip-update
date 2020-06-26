@@ -4,5 +4,6 @@ max-doc-length = 200
 per-file-ignores =
     *.py:W605
     *.py:E402
+    *.py:E501
 exclude =
     ci.py
