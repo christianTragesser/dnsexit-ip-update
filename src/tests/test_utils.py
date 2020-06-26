@@ -31,7 +31,7 @@ def test_get_update_url(caplog):
 
 
 @responses.activate
-@mock.patch('socket.gethostbyname', return_value='2.2.2.2')
+@mock.patch('utils.dns_lookup', return_value=('2.2.2.2'))
 def test_evaluate_ip_synced(mock_dns_lookup, caplog):
     # lookup current egress IP address
     # lookup current DNS A record for domain
@@ -47,7 +47,20 @@ def test_evaluate_ip_synced(mock_dns_lookup, caplog):
 
 
 @responses.activate
-@mock.patch('socket.gethostbyname', return_value='4.4.4.4')
+@mock.patch('utils.dns_lookup', return_value=('1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4'))
+def test_evaluate_multiple_ip_synced(mock_dns_lookup, caplog):
+    # using multiple A record IPs
+    responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
+
+    sync = evaluate_ip_sync('test.local')
+    assert sync
+    assert 'Evaluating DNS A record for test.local' in caplog.text
+    assert 'egress 2.2.2.2 - dns 1.1.1.1 2.2.2.2 3.3.3.3 4.4.4.4' in caplog.text
+    assert 'DNS A record for test.local is up to date.' in caplog.text
+
+
+@responses.activate
+@mock.patch('utils.dns_lookup', return_value=('4.4.4.4'))
 def test_evaluate_ip_unsynced(mock_dns_lookup, caplog):
     # lookup current egress IP address
     # lookup current DNS A record for domain

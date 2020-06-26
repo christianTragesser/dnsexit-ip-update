@@ -6,3 +6,4 @@ pytest==5.4.3
 pytest-cov==2.10.0
 docker==3.5.0
 python-json-logger==0.1.11
+dnspython==1.16.0
