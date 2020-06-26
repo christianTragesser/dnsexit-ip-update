@@ -27,7 +27,7 @@ if login == '' or password == '' or domain == '':
     exit(1)
 
 if __name__ == '__main__':
-    log.info('Using DNSExit info login:{} domain:{}'.format(login, domain))
+    log.info('init: Using DNSExit info login:{} domain:{}'.format(login, domain))
     if not utils.validate_credentials(login, password):
         exit(1)
     if not utils.validate_domain(login, domain):

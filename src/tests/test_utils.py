@@ -27,7 +27,7 @@ def test_get_update_url(caplog):
 
     update_addr = get_update_url(update_data_url)
     assert update_addr == 'https://update.test.local/TestUpdate.sv'
-    assert 'DNSExit update URL is https://update.test.local/TestUpdate.sv' in caplog.text
+    assert 'init: DNSExit update URL is https://update.test.local/TestUpdate.sv' in caplog.text
 
 
 @responses.activate
@@ -91,7 +91,7 @@ def test_update_dns_a_record(caplog):
 
     result = update_dns_a_record(update_fqdn=update_url, user=user, password=password, domain=domain)
     assert result == 200
-    assert 'test.local DNS A record has been updated to 2.2.2.2.' in caplog.text
+    assert 'DNSExit IP Update service has been notified to use IP address 2.2.2.2 for domain test.local' in caplog.text
 
 
 @responses.activate
@@ -108,7 +108,7 @@ def test_valid_credentials(caplog):
 
     result = validate_credentials(login=login, password=password)
     assert result
-    assert 'DNSExit IP Update credentials are valid.' in caplog.text
+    assert 'init: DNSExit IP Update credentials are valid.' in caplog.text
 
 
 @responses.activate
@@ -125,7 +125,7 @@ def test_invalid_credentials(caplog):
 
     result = validate_credentials(login=login, password=password)
     assert not result
-    assert 'The provided DNSExit IP Update credentials are not valid, exiting.' in caplog.text
+    assert 'init: The provided DNSExit IP Update credentials are not valid, exiting.' in caplog.text
 
 
 @responses.activate
@@ -142,7 +142,7 @@ def test_valid_domain(caplog):
 
     result = validate_domain(login=login, domain=domain)
     assert result
-    assert 'test.local domain is valid.' in caplog.text
+    assert 'init: test.local domain is valid.' in caplog.text
 
 
 @responses.activate
@@ -159,4 +159,4 @@ def test_invalid_domain(caplog):
 
     result = validate_domain(login=login, domain=domain)
     assert not result
-    assert 'test.local domain is invalid, test.local not found in tester account.' in caplog.text
+    assert 'init: test.local domain is invalid, test.local not found in tester account.' in caplog.text
