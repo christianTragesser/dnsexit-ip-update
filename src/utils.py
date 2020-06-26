@@ -14,7 +14,7 @@ def get_update_url(data_url):
 
 def dns_lookup(domain):
     resolve = Resolver()
-    resolve.nameservers = ['1.1.1.1', '8.8.8.8']
+    resolve.nameservers = ['8.8.8.8']
     try:
         answers = resolve.query(domain)
         return tuple((rdata.address for rdata in answers))
