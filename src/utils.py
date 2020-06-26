@@ -8,8 +8,8 @@ log = logs.logger('utils')
 def get_update_url(data_url):
     update_data = requests.get(data_url)
     update_domain = update_data.text.split()[0].split('//')[-1]
-    log.info('init: DNSExit update URL is https://'+update_domain)
-    return 'https://'+update_domain
+    log.info('init: DNSExit update URL is https://' + update_domain)
+    return 'https://' + update_domain
 
 
 def dns_lookup(domain):
@@ -33,7 +33,7 @@ def evaluate_ip_sync(domain):
     if isinstance(dns_ips, tuple):
         dns_list = ''
         for ip in dns_ips:
-            dns_list = dns_list+ip+' '
+            dns_list = dns_list + ip + ' '
     else:
         dns_list = dns_ips
 
