@@ -76,6 +76,16 @@ def test_evaluate_ip_unsynced(mock_dns_lookup, caplog):
 
 
 @responses.activate
+@mock.patch('utils.dns_lookup', return_value=())
+def test_no_dns_record(mock_dns_lookup, caplog):
+    # dns lookup failure
+    responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
+
+    sync = evaluate_ip_sync('test.local')
+    assert sync is None
+
+
+@responses.activate
 def test_update_dns_a_record(caplog):
     # takes in update url, user, password, and domain
     # performs update query

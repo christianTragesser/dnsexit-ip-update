@@ -27,6 +27,9 @@ def evaluate_ip_sync(domain):
     egress_ip = requests.get('https://api.ipify.org').text
     dns_ips = dns_lookup(domain)
 
+    if dns_ips == ():
+        return None
+
     if isinstance(dns_ips, tuple):
         dns_list = ''
         for ip in dns_ips:
@@ -35,6 +38,7 @@ def evaluate_ip_sync(domain):
         dns_list = dns_ips
 
     log.info('Evaluating DNS A record for {}: egress {} - dns {}'.format(domain, egress_ip, dns_list))
+
     if egress_ip in dns_ips:
         log.info('DNS A record for {} is up to date.'.format(domain))
         return True
