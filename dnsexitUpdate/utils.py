@@ -1,5 +1,5 @@
 import requests
-import logs
+from dnsexitUpdate import logs
 from dns.resolver import Resolver
 
 log = logs.logger('utils')

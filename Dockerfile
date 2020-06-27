@@ -5,12 +5,15 @@ COPY requirements/requirements.txt /tmp/requirements.txt
 RUN apk add ca-certificates --no-cache && \
     pip install -r /tmp/requirements.txt --no-cache-dir && \
     addgroup -S -g 2222 dnsexit && \
-    adduser -S -u 2222 -g dnsexit dnsexit
+    adduser -S -u 2222 -g dnsexit dnsexit && \
+    mkdir /opt/dnsexitUpdate
 
-COPY src/*.py /opt/
+COPY dnsexitUpdate/*.py /opt/dnsexitUpdate/
 
-RUN chmod 755 -R /opt
+RUN chmod 755 -R /opt/dnsexitUpdate
 
 USER dnsexit
 
-CMD ["/bin/sh", "-c", "python /opt/main.py"]
+WORKDIR /opt
+
+CMD ["/bin/sh", "-c", "python -m dnsexitUpdate"]

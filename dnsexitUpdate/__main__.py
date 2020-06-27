@@ -1,7 +1,7 @@
 import os
 from time import sleep
-import utils
-import logs
+from dnsexitUpdate import utils
+from dnsexitUpdate import logs
 
 log = logs.logger('main')
 
