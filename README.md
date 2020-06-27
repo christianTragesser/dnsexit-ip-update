@@ -7,8 +7,8 @@ Before using this client it is **strongly recommended** you create a [Dynamic IP
 
 This client was built according to the DNSExit IP Update [specification document](http://downloads.dnsexit.com/ipUpdateDev.doc).
 
-#### Install
-##### [PyPi](https://pypi.org/project/dnsexit-ip-update/)
+### Install
+#### [PyPi](https://pypi.org/project/dnsexit-ip-update/)
 Python 3.6 or later
 ```sh
 $ export LOGIN="<your dnsexit login>"
@@ -17,7 +17,7 @@ $ export DOMAIN="<your dnsexit registered domain>"
 $ pip install dnsexit-ip-update
 $ python -m dnsexitUpdate
 ```
-##### Docker (suggested)
+#### Docker (suggested)
 ```sh
 $ docker run -d -e LOGIN="<your dnsexit login>" \
                 -e PASSWORD="<your dnsexit IP Update password>" \

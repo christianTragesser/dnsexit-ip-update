@@ -19,9 +19,9 @@ test:
   tags:
     - docker
   script:
-    - flake8 $CI_PROJECT_DIR/src 
-    - pytest
-    - pytest --cov=$CI_PROJECT_DIR/src --cov-report term
+    - flake8 $CI_PROJECT_DIR/dnsexitUpdate 
+    - python3 -m pytest
+    - python3 -m pytest --cov=$CI_PROJECT_DIR/dnsexitUpdate --cov-report term
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker build -t $LOCAL_TAG -f $CI_PROJECT_DIR/Dockerfile .
     - docker tag $LOCAL_TAG ${EXT_TAG}:latest 
@@ -36,7 +36,9 @@ release:
   tags:
     - docker
   script:
-    - docker version
+    - python setup.py sdist
+    - twine check dist/*
+    - twine upload dist/*
   only:
     - tags
   except:
