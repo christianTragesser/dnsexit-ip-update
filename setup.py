@@ -9,7 +9,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
      name='dnsexit-ip-update',  
-     version='0.1.0',
+     version='0.1.1',
      author="Christian Tragesser",
      author_email="christian@evoen.net",
      description="Dynamic DNS client for DNS Exit",
