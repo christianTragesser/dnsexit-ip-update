@@ -1,8 +1,13 @@
+import socket
 import requests
 from dnsexitUpdate import logs
 from dns.resolver import Resolver
 
 log = logs.logger('utils')
+dnsexit_nameservers = ['ns1.dnsexit.com', 'ns2.dnsexit.com', 'ns3.dnsexit.com', 'ns4.dnsexit.com']
+nameservers = [socket.gethostbyname(ns) for ns in dnsexit_nameservers]
+resolve = Resolver()
+resolve.nameservers = nameservers
 
 
 def get_update_url(data_url):
@@ -13,8 +18,6 @@ def get_update_url(data_url):
 
 
 def dns_lookup(domain):
-    resolve = Resolver()
-    resolve.nameservers = ['8.8.8.8']
     try:
         answers = resolve.query(domain)
         return tuple((rdata.address for rdata in answers))
