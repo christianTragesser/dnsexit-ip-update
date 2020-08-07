@@ -1,7 +1,7 @@
 # dnsexit-ip-update
 [![pipeline status](https://gitlab.com/christianTragesser/dnsexit-ip-update/badges/master/pipeline.svg)](https://gitlab.com/christianTragesser/dnsexit-ip-update/commits/master)
 
-A dynamic DNS client for [DNSExit](https://www.dnsexit.com/) registered domains written in Python.
+A dynamic DNS client for [DNSExit](https://www.dnsexit.com/) registered domains.
 
 Before using this client it is **strongly recommended** you create a [Dynamic IP Update Password](https://www.dnsexit.com/Direct.sv?cmd=userProfilePwIP) for your account rather than using your DNSExit account login credentials.
 
