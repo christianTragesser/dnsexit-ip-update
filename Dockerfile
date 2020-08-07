@@ -8,7 +8,7 @@ RUN apk add ca-certificates --no-cache && \
     adduser -S -u 2222 -g dnsexit dnsexit && \
     mkdir /opt/dnsexitUpdate
 
-COPY dnsexitUpdate/*.py /opt/dnsexitUpdate/
+COPY src/dnsexitUpdate/*.py /opt/dnsexitUpdate/
 
 RUN chmod 755 -R /opt/dnsexitUpdate
 

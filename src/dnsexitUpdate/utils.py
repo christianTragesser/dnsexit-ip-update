@@ -44,10 +44,10 @@ def evaluate_ip_sync(domain):
 
     if egress_ip in dns_ips:
         log.info('INFO: DNS A record for {} is up to date.'.format(domain))
-        return True
+        return False
     else:
         log.info('INFO: Updating {} DNS A record.'.format(domain))
-        return False
+        return True
 
 
 def update_dns_a_record(update_fqdn, user, password, domain):

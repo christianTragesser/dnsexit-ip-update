@@ -19,13 +19,13 @@ test:
   tags:
     - docker
   script:
-    - flake8 $CI_PROJECT_DIR/dnsexitUpdate 
-    - python3 -m pytest
-    - python3 -m pytest --cov=$CI_PROJECT_DIR/dnsexitUpdate --cov-report term
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t $LOCAL_TAG -f $CI_PROJECT_DIR/Dockerfile .
+    - flake8 ${CI_PROJECT_DIR}/src/dnsexitUpdate 
+    - pytest --cov=${CI_PROJECT_DIR}/src/dnsexitUpdate ${CI_PROJECT_DIR}/src/tests
+    - docker build -t ${LOCAL_TAG} -f $CI_PROJECT_DIR/Dockerfile .
+    - python -c "from pyplineCI import Pipeline; Pipeline().cve_scan('${LOCAL_TAG}')"
     - docker tag $LOCAL_TAG ${EXT_TAG}:latest 
     - docker tag $LOCAL_TAG ${EXT_TAG}:master-${CI_COMMIT_SHORT_SHA}
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
     - docker push ${EXT_TAG}:latest | grep -e "The push refers to" -e latest
     - docker push ${EXT_TAG}:master-${CI_COMMIT_SHORT_SHA} | grep -e "The push refers to" -e latest
   only:
@@ -39,6 +39,7 @@ release:
     - python3 setup.py sdist
     - twine check dist/*
     - twine upload dist/*
+  when: manual
   only:
     - tags
   except:

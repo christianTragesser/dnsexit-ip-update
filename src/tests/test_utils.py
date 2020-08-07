@@ -1,21 +1,18 @@
+from unittest import mock
 import responses
-import mock
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils import get_update_url
-from utils import evaluate_ip_sync
-from utils import update_dns_a_record
-from utils import validate_credentials
-from utils import validate_domain
+from dnsexitUpdate.utils import get_update_url, evaluate_ip_sync, update_dns_a_record, validate_credentials, validate_domain
 
 current_ip_resource = 'https://api.ipify.org'
 
 
 @responses.activate
 def test_get_update_url(caplog):
-    # retrieves update data
+    # retrieves DNSExit update data
     # filters update URL from update data
+    # write system log of derived update address
     # returns update FQDN and path
     update_data_url = 'https://test.local/ipupdate/dyndata.txt'
     update_data = '''
@@ -31,52 +28,52 @@ def test_get_update_url(caplog):
 
 
 @responses.activate
-@mock.patch('utils.dns_lookup', return_value=('2.2.2.2'))
+@mock.patch('dnsexitUpdate.utils.dns_lookup', return_value=('2.2.2.2'))
 def test_evaluate_ip_synced(mock_dns_lookup, caplog):
     # lookup current egress IP address
     # lookup current DNS A record for domain
     # compare current IP with DNS IP
-    # return True when matching
+    # return True when current egress IP matches current DNS A record and write system log
     responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
 
     sync = evaluate_ip_sync('test.local')
-    assert sync
+    assert not sync
     assert 'Evaluating DNS A record for test.local' in caplog.text
     assert 'egress 2.2.2.2 - dns 2.2.2.2' in caplog.text
     assert 'DNS A record for test.local is up to date.' in caplog.text
 
 
 @responses.activate
-@mock.patch('utils.dns_lookup', return_value=('1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4'))
+@mock.patch('dnsexitUpdate.utils.dns_lookup', return_value=('1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4'))
 def test_evaluate_multiple_ip_synced(mock_dns_lookup, caplog):
     # using multiple A record IPs
     responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
 
     sync = evaluate_ip_sync('test.local')
-    assert sync
+    assert not sync
     assert 'Evaluating DNS A record for test.local' in caplog.text
     assert 'egress 2.2.2.2 - dns 1.1.1.1 2.2.2.2 3.3.3.3 4.4.4.4' in caplog.text
     assert 'DNS A record for test.local is up to date.' in caplog.text
 
 
 @responses.activate
-@mock.patch('utils.dns_lookup', return_value=('4.4.4.4'))
+@mock.patch('dnsexitUpdate.utils.dns_lookup', return_value=('4.4.4.4'))
 def test_evaluate_ip_unsynced(mock_dns_lookup, caplog):
     # lookup current egress IP address
     # lookup current DNS A record for domain
     # compare current IP with DNS IP
-    # return False when not matching
+    # return False when not matching and write system log
     responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
 
     sync = evaluate_ip_sync('test.local')
-    assert not sync
+    assert sync
     assert 'Evaluating DNS A record for test.local' in caplog.text
     assert 'egress 2.2.2.2 - dns 4.4.4.4' in caplog.text
     assert 'Updating test.local DNS A record.' in caplog.text
 
 
 @responses.activate
-@mock.patch('utils.dns_lookup', return_value=())
+@mock.patch('dnsexitUpdate.utils.dns_lookup', return_value=())
 def test_no_dns_record(mock_dns_lookup, caplog):
     # dns lookup failure
     responses.add(responses.GET, current_ip_resource, body='2.2.2.2')
@@ -89,7 +86,7 @@ def test_no_dns_record(mock_dns_lookup, caplog):
 def test_update_dns_a_record(caplog):
     # takes in update url, user, password, and domain
     # performs update query
-    # reports update query result
+    # reports update query result and write system log
     update_url = 'https://update.test.local/TestUpdate.sv'
     user = 'tester'
     password = 'Hello123'
@@ -110,7 +107,7 @@ def test_valid_credentials(caplog):
     # validates credentials with DNSExit
     # parse text response
     # log credentials are valid
-    # return true if credentials are valid
+    # return true if credentials are valid and write system log
     login = 'tester'
     password = 'Hello123'
     creds_validation_url = 'https://update.dnsexit.com/ipupdate/account_validate.jsp?login={}&password={}'.format(login, password)
@@ -127,7 +124,7 @@ def test_invalid_credentials(caplog):
     # validates credentials with DNSExit
     # parse text response
     # log credentials are invalid
-    # return false if credentials are invalid
+    # return false if credentials are invalid and write system log
     login = 'tester'
     password = 'Hello123'
     creds_validation_url = 'https://update.dnsexit.com/ipupdate/account_validate.jsp?login={}&password={}'.format(login, password)
@@ -144,7 +141,7 @@ def test_valid_domain(caplog):
     # validates domain with DNSExit
     # parse text response
     # log domain is valid
-    # return true if domain is valid
+    # return true if domain is valid and write system log
     login = 'tester'
     domain = 'test.local'
     domain_validation_url = 'https://update.dnsexit.com/ipupdate/domains.jsp?login={}'.format(login)
@@ -161,7 +158,7 @@ def test_invalid_domain(caplog):
     # validates domain with DNSExit
     # parse text response
     # log domain is invalid
-    # return false if domain is invalid
+    # return false if domain is invalid and write system log
     login = 'tester'
     domain = 'test.local'
     domain_validation_url = 'https://update.dnsexit.com/ipupdate/domains.jsp?login={}'.format(login)

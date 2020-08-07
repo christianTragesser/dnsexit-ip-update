@@ -17,7 +17,7 @@ setup(
      long_description=README,
      license='MIT',
      url="https://github.com/christianTragesser/dnsexit-ip-update",
-     packages=find_packages(exclude=["tests"]),
+     packages=find_packages(where='src', exclude=["tests"]),
      install_requires=[
         "requests >= 2.24.0",
         "python-json-logger >= 0.1.11",

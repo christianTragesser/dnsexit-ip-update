@@ -20,7 +20,7 @@ def main(update_url, login, password, domain):
     sync_result = utils.evaluate_ip_sync(domain)
     if sync_result is None:
         log.error('ERROR: dnsexit-ip-update is not able to resolve {0:s} and should only be used to update existing DNS A records. Skipping update for {0:s}'.format(domain))
-    elif not sync_result:
+    elif sync_result:
         try:
             utils.update_dns_a_record(update_fqdn, login, password, domain)
         except Exception as e:
