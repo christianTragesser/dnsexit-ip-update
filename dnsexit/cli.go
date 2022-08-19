@@ -32,17 +32,14 @@ func CLIArgs() {
 		Record: updateData,
 	}
 
-	eventResp, err := cliWorkflow(cliEvent)
-	if err != nil {
-		logc.Errorln("CLI workflow failed.")
-	}
+	eventResp, _ := CLIWorkflow(cliEvent)
 
 	if eventResp.Message != "" {
 		logc.Infoln(eventResp)
 	}
 }
 
-func cliWorkflow(cliEvent Event) (Event, error) {
+func CLIWorkflow(cliEvent Event) (Event, error) {
 	var response Event
 	var err error
 	action := os.Args[1]
@@ -60,8 +57,8 @@ func cliWorkflow(cliEvent Event) (Event, error) {
 	case "-h":
 		fmt.Println("dnsexit options:\n dnsexit update -h")
 	default:
-		fmt.Printf("\n%s is not a valid dnsexit option\n", action)
-		fmt.Println("\n dnsexit update -h")
+		fmt.Printf("Invalid argument: '%s'", action)
+		fmt.Println("\n 'dnsexit -h' to list valid options")
 	}
 
 	return response, err
