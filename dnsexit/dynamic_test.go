@@ -1,10 +1,7 @@
 package dnsexit
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"reflect"
 	"testing"
 )
@@ -15,19 +12,20 @@ type mockAPIResponse struct {
 	message string
 }
 
-func (r mockAPIResponse) callDynamicUpdate(url string) (http.Response, error) {
+func (m mockAPIResponse) setUpdate(event Event) (Event, error) {
 	var err error
 
-	respBody := []byte(fmt.Sprintf("%v", r))
-
-	mockResponse := http.Response{
-		Status:     "OK",
-		StatusCode: 200,
-		Proto:      "HTTP/1.0",
-		Body:       ioutil.NopCloser(bytes.NewReader(respBody)),
+	mockEvent := Event{
+		Code:    m.code,
+		Details: m.details,
+		Message: m.message,
 	}
 
-	return mockResponse, err
+	if m.code > 7 {
+		err = fmt.Errorf("This is a mocked exception.")
+	}
+
+	return mockEvent, err
 }
 
 func TestDynamicUpdate(t *testing.T) {
@@ -39,65 +37,55 @@ func TestDynamicUpdate(t *testing.T) {
 	tests := []struct {
 		name     string
 		resp     mockAPIResponse
-		expected dynamicUpdateEvent
+		expected Event
 	}{
 		{
 			name: "Update event true",
 			resp: mockAPIResponse{
 				code:    0,
-				details: []string{"Update happened."},
+				details: []string{"Update call success."},
 				message: "Success",
 			},
-			expected: dynamicUpdateEvent{
-				resp: apiResponse{
-					code:    0,
-					details: []string{"Update happened."},
-					message: "Success",
-				},
-				err: nil,
+			expected: Event{
+				Code:    0,
+				Details: []string{"Update call success."},
+				Message: "Success",
 			},
 		},
 		{
-			name: "Update event false",
+			name: "Update event failure",
 			resp: mockAPIResponse{
-				code:    1,
-				details: []string{"Update did not happened."},
-				message: "No Op.",
-			},
-			expected: dynamicUpdateEvent{
-				resp: apiResponse{
-					code:    1,
-					details: []string{"Update did not happened."},
-					message: "No Op.",
-				},
-				err: nil,
-			},
-		},
-		{
-			name: "Update event failuer",
-			resp: mockAPIResponse{
-				code:    2,
-				details: []string{"Update exception."},
+				code:    3,
+				details: []string{"Update call failure."},
 				message: "Exception",
 			},
-			expected: dynamicUpdateEvent{
-				resp: apiResponse{
-					code:    2,
-					details: []string{"Update exception."},
-					message: "Exception",
-				},
-				err: nil,
+			expected: Event{
+				Code:    3,
+				Details: []string{"Update call failure."},
+				Message: "Exception",
+			},
+		},
+		{
+			name: "Update event exception",
+			resp: mockAPIResponse{
+				code:    8,
+				details: []string{"Update call exception."},
+				message: "Exception",
+			},
+			expected: Event{
+				Code:    8,
+				Details: []string{"Update call exception."},
+				Message: "Exception",
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			dnsEvent := tc.resp
-			got, _ := DynamicUpdate(dnsEvent)
+			got, _ := dynamicUpdate(tc.resp, tc.expected)
 
 			if !reflect.DeepEqual(got, tc.expected) {
-				t.Errorf("DynamicUpdateAPI unit test failure '%s'\n got: '%v'\n want: '%v'", tc.name, got, tc.expected)
+				t.Errorf("DynamicUpdate unit test failure '%s'\n got: '%v'\n want: '%v'", tc.name, got, tc.expected)
 			}
 		})
 	}
