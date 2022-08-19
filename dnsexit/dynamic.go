@@ -56,6 +56,8 @@ func (r Event) setUpdate(event Event) (Event, error) {
 	if err != nil {
 		logd.Error(err)
 		logd.Errorln("HTTP POST failed for dynamic update.")
+
+		return responseData, err
 	}
 	defer resp.Body.Close()
 
