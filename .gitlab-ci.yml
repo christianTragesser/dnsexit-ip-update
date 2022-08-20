@@ -1,46 +1,82 @@
-image: registry.gitlab.com/christiantragesser/dnsexit-ip-update:dev
-
 variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_DRIVER: overlay2
-    DOCKER_TLS_CERTDIR: ""
-    LOCAL_TAG: local/dnsexit-ip-update
-    EXT_TAG: $CI_REGISTRY/christiantragesser/dnsexit-ip-update
-    
-services:
-- name: docker:19.03.1-dind
+  IMAGE_NAME: dnsexit-ip-update
+
+include:
+  - project: christiantragesser/gitlab-ci-templates
+    ref: master
+    file:
+      - goreleaser.yml
+      - kaniko.yml
+
+.default_branch_only:
+  rules:
+  - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    changes:
+      - go.*
+      - main.go
+      - dnsexit/*
+      - pkg/Dockerfile
+
+.app_files_only:
+  rules:
+  - if: $CI_COMMIT_TAG == null 
+    changes:
+      - go.*
+      - main.go
+      - dnsexit/*
 
 stages:
   - test
+  - publish
   - release
 
-test:
+test:lint:
   stage: test
-  tags:
-    - docker
-  script:
-    - flake8 ${CI_PROJECT_DIR}/src/dnsexitUpdate 
-    - pytest --cov=${CI_PROJECT_DIR}/src/dnsexitUpdate ${CI_PROJECT_DIR}/src/tests
-    - docker build -t ${LOCAL_TAG} -f $CI_PROJECT_DIR/Dockerfile .
-    - python -c "from pyplineCI import Pipeline; Pipeline().cve_scan('${LOCAL_TAG}')"
-    - docker tag $LOCAL_TAG ${EXT_TAG}:latest 
-    - docker tag $LOCAL_TAG ${EXT_TAG}:master-${CI_COMMIT_SHORT_SHA}
-    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
-    - docker push ${EXT_TAG}:latest | grep -e "The push refers to" -e latest
-    - docker push ${EXT_TAG}:master-${CI_COMMIT_SHORT_SHA} | grep -e "The push refers to" -e latest
-  only:
-    - master
+  extends:
+    - .kaniko_publish
+    - .app_files_only
+  variables:
+    DOCKERFILE_PATH: ./pkg/Dockerfile
+    DOCKER_BUILD_STAGE: lint
+    KANIKO_ADDITIONAL_ARGS: --no-push
 
-release:
+test:unit:
+  stage: test
+  extends:
+    - .kaniko_publish
+    - .app_files_only
+  variables:
+    DOCKERFILE_PATH: ./pkg/Dockerfile
+    DOCKER_BUILD_STAGE: test
+    KANIKO_ADDITIONAL_ARGS: --no-push
+
+publish:binary:
+  stage: publish
+  extends:
+    - .bin_publish
+    - .default_branch_only
+  artifacts:
+    paths:
+      - dist/${IMAGE_NAME}_linux_amd64_v1/${IMAGE_NAME}-linux-amd64
+  
+publish:container:
+  stage: publish
+  needs: ["publish:binary"]
+  extends:
+    - .kaniko_publish
+    - .default_branch_only
+  variables:
+    DOCKERFILE_PATH: ./pkg/Dockerfile.pipeline
+    DOCKER_BUILD_STAGE: publish
+  dependencies:
+    - publish:binary
+
+release:github:
   stage: release
-  tags:
-    - docker
-  script:
-    - python3 setup.py sdist
-    - twine check dist/*
-    - twine upload dist/*
-  when: manual
-  only:
-    - tags
-  except:
-    - branches
+  extends:
+    - .gh_release
+
+release:container:
+  stage: release
+  extends:
+    - .kaniko_release
