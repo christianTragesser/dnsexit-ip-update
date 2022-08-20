@@ -7,7 +7,7 @@ func ExampleCLIWorkflow_invalid() {
 
 	os.Args[1] = "test"
 
-	CLIWorkflow(testEvent)
+	_, _ = CLIWorkflow(testEvent)
 
 	// Output: Invalid argument: 'test'
 	//  'dnsexit -h' to list valid options
@@ -18,7 +18,7 @@ func ExampleCLIWorkflow_help() {
 
 	os.Args[1] = "-h"
 
-	CLIWorkflow(testEvent)
+	_, _ = CLIWorkflow(testEvent)
 
 	// Output: dnsexit options:
 	//  dnsexit update -h

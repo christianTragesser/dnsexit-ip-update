@@ -6,10 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type LogFields struct {
-	name string
-}
-
 func GetLogger(name string) *logrus.Entry {
 	log := logrus.New()
 

@@ -3,7 +3,7 @@ package dnsexit
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -61,7 +61,7 @@ func (r Event) setUpdate(event Event) (Event, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logd.Error(err)
 		logd.Errorln("Failed to read API response body.")
