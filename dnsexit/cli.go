@@ -2,22 +2,17 @@ package dnsexit
 
 import (
 	"flag"
-	"fmt"
 	"os"
 )
 
 var logc = GetLogger("cli")
 
 func CLIArgs() {
-	cliArgs := flag.NewFlagSet("update", flag.ExitOnError)
-	cliDomain := cliArgs.String("domain", "", "DNSExit domain name")
-	cliIPAddr := cliArgs.String("ip", "", "IP address")
-	cliKey := cliArgs.String("key", "", "DNS API key")
+	cliDomain := flag.String("domain", "", "DNSExit domain name")
+	cliIPAddr := flag.String("ip", "", "IP address")
+	cliKey := flag.String("key", "", "DNS API key")
 
-	err := cliArgs.Parse(os.Args[2:])
-	if err != nil {
-		logc.Errorln("Failed to parse update CLI args.")
-	}
+	flag.Parse()
 
 	updateData := updateRecord{
 		Type:    recordType,
@@ -42,23 +37,15 @@ func CLIArgs() {
 func CLIWorkflow(cliEvent Event) (Event, error) {
 	var response Event
 	var err error
-	action := os.Args[1]
+	statusAPI := recordStatus{}
 
-	switch action {
-	case "update":
-		if dynamicUpdateDepencies(cliEvent) {
-			response, err = dynamicUpdate(response, cliEvent)
-			if err != nil {
-				logc.Errorln("Dynamic IP update failed.")
-			}
-		} else {
-			os.Exit(0)
+	if !recordIsCurrent(statusAPI, cliEvent) && dynamicUpdateDepencies(cliEvent) {
+		response, err = dynamicUpdate(response, cliEvent)
+		if err != nil {
+			logc.Errorln("Dynamic IP update failed.")
 		}
-	case "-h":
-		fmt.Println("dnsexit options:\n dnsexit update -h")
-	default:
-		fmt.Printf("Invalid argument: '%s'", action)
-		fmt.Println("\n 'dnsexit -h' to list valid options")
+	} else {
+		os.Exit(0)
 	}
 
 	return response, err

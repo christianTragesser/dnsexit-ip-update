@@ -44,7 +44,7 @@ func (r Event) setUpdate(event Event) (Event, error) {
 
 	req, err := http.NewRequest("POST", event.URL, data)
 	if err != nil {
-		logd.Errorln("Failed to create HTTP request.")
+		logd.Errorln("Failed to create HTTP POST to DNSExit API.")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -90,10 +90,6 @@ func dynamicUpdateDepencies(event Event) bool {
 	}
 	if event.Record.Name == "" {
 		logd.Errorln("Missing DNSExit domain name.")
-		eventReady = false
-	}
-	if event.Record.Content == "" {
-		logd.Errorln("Missing IP address.")
 		eventReady = false
 	}
 
