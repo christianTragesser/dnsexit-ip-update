@@ -8,8 +8,6 @@ import (
 type mockRecordStatus struct {
 	currentRecord net.IP
 	currentIP     string
-	desiredIP     string
-	domain        string
 }
 
 func (c mockRecordStatus) getRecords(domain string) []net.IP {

@@ -3,14 +3,16 @@ package dnsexit
 import (
 	"flag"
 	"os"
+	"time"
 )
 
 var logc = GetLogger("cli")
 
 func CLIArgs() {
 	cliDomain := flag.String("domain", "", "DNSExit domain name")
-	cliIPAddr := flag.String("ip", "", "IP address")
-	cliKey := flag.String("key", "", "DNS API key")
+	cliKey := flag.String("key", "", "DNSExit API key")
+	cliInterval := flag.Int("interval", 10, "Time interval in minutes")
+	cliIPAddr := flag.String("ip", "", "Desired A record IP address")
 
 	flag.Parse()
 
@@ -22,31 +24,37 @@ func CLIArgs() {
 	}
 
 	cliEvent := Event{
-		URL:    apiURL,
-		APIKey: *cliKey,
-		Record: updateData,
+		URL:      apiURL,
+		APIKey:   *cliKey,
+		Record:   updateData,
+		Interval: *cliInterval,
 	}
 
-	eventResp, _ := CLIWorkflow(cliEvent)
+	CLIWorkflow(cliEvent)
 
-	if eventResp.Message != "" {
-		logc.Infoln(eventResp)
-	}
 }
 
-func CLIWorkflow(cliEvent Event) (Event, error) {
+func CLIWorkflow(cliEvent Event) {
 	var response Event
 	var err error
 	statusAPI := recordStatus{}
 
-	if !recordIsCurrent(statusAPI, cliEvent) && dynamicUpdateDepencies(cliEvent) {
-		response, err = dynamicUpdate(response, cliEvent)
-		if err != nil {
-			logc.Errorln("Dynamic IP update failed.")
+	if hasDepencies(cliEvent) {
+		if !recordIsCurrent(statusAPI, cliEvent) {
+			response, err = dynamicUpdate(response, cliEvent)
+			if err != nil {
+				logc.Errorln("Dynamic IP update failed.")
+			}
+
+			if response.Message != "" {
+				logc.Infoln(response)
+			}
 		}
 	} else {
 		os.Exit(0)
 	}
 
-	return response, err
+	time.Sleep(time.Duration(cliEvent.Interval) * time.Minute)
+
+	CLIWorkflow(cliEvent)
 }

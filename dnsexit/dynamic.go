@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 )
 
@@ -23,12 +24,13 @@ type updateRecord struct {
 }
 
 type Event struct {
-	Code    int      `json:"code"`
-	Details []string `json:"details"`
-	Message string   `json:"message"`
-	URL     string
-	APIKey  string
-	Record  updateRecord
+	Code     int      `json:"code"`
+	Details  []string `json:"details"`
+	Message  string   `json:"message"`
+	URL      string
+	APIKey   string
+	Record   updateRecord
+	Interval int
 }
 
 type dnsExitAPI interface {
@@ -81,15 +83,21 @@ func dynamicUpdate(api dnsExitAPI, event Event) (Event, error) {
 	return eventResponse, err
 }
 
-func dynamicUpdateDepencies(event Event) bool {
+func hasDepencies(event Event) bool {
 	var eventReady = true
 
 	if event.APIKey == "" {
 		logd.Errorln("Missing API Key.")
 		eventReady = false
 	}
+
 	if event.Record.Name == "" {
 		logd.Errorln("Missing DNSExit domain name.")
+		eventReady = false
+	}
+
+	if event.Record.Content != "" && net.ParseIP(event.Record.Content) == nil {
+		logd.Errorf("Invalid A record content provided: %s", event.Record.Content)
 		eventReady = false
 	}
 
