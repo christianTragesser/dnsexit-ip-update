@@ -38,24 +38,24 @@ jobs:
       - name: Configure docker client 
         run: goreleaser build --snapshot
 
-      - name: Configure docker client 
-        run: |
-          mkdir -p /kaniko/.docker && \
-          cat << EOF > /kaniko/.docker/config.json
-          {
-            "auths": {
-              "registry.gitlab.com": {
-                "auth": "$(echo -n ${{ secrets.GITLAB_REGISTRY_USER }}:${{ secrets.GITLAB_REGISTRY_PAT }} | base64)"
-              }
-            }
-          }
-          EOF
+      #- name: Configure docker client 
+      #  run: |
+      #    mkdir -p /kaniko/.docker && \
+      #    cat << EOF > /kaniko/.docker/config.json
+      #    {
+      #      "auths": {
+      #        "registry.gitlab.com": {
+      #          "auth": "$(echo -n ${{ secrets.GITLAB_REGISTRY_USER }}:${{ secrets.GITLAB_REGISTRY_PAT }} | base64)"
+      #        }
+      #      }
+      #    }
+      #    EOF
 
-      - name: Publish container image 
-        run: |
-          /kaniko/executor
-          --context .
-          --dockerfile ./pkg/Dockerfile
-          --destination registry.gitlab.com/christiantragesser/dnsexit-ip-update:golang-client
-          --skip-unused-stages
-          --target publish
+      #- name: Publish container image 
+      #  run: |
+      #    /kaniko/executor
+      #    --context .
+      #    --dockerfile ./pkg/Dockerfile
+      #    --destination registry.gitlab.com/christiantragesser/dnsexit-ip-update:golang-client
+      #    --skip-unused-stages
+      #    --target publish
