@@ -1,35 +1,60 @@
-name: CI
+name: Main
 
-# Controls when the workflow will run
 on:
   push:
     branches: [ "master", "golang-client" ]
 
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   lint:
     runs-on: ubuntu-latest
     container: golangci/golangci-lint
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Runs a set of commands using the runners shell
       - name: Run linter
         run: golangci-lint run
-  test:
+
+  unit-test:
     runs-on: ubuntu-latest
     container: golang:stretch 
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Runs a set of commands using the runners shell
       - name: Run unit tests
         run: go test -v --cover ./dnsexit
+  
+  publish:
+    runs-on: ubuntu-latest
+    container: registry.gitlab.com/christiantragesser/gitlab-ci-templates/intermodal
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure docker client 
+        run: goreleaser build --snapshot
+
+      - name: Configure docker client 
+        run: |
+          mkdir -p /kaniko/.docker && \
+          cat << EOF > /kaniko/.docker/config.json
+          {
+            "auths": {
+              "registry.gitlab.com": {
+                "auth": "$(echo -n ${{ secrets.GITLAB_REGISTRY_USER }}:${{ secrets.GITLAB_REGISTRY_PAT }} | base64)"
+              }
+            }
+          }
+          EOF
+
+      - name: Publish container image 
+        run: |
+          /kaniko/executor
+          --context .
+          --dockerfile ./pkg/Dockerfile
+          --destination registry.gitlab.com/christiantragesser/dnsexit-ip-update:golang-client
+          --skip-unused-stages
+          --target publish

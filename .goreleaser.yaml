@@ -7,15 +7,27 @@ builds:
       - CGO_ENABLED=0
     goarch:
       - amd64
+      - arm64
     goos:
       - linux
       - darwin
+      - windows
     binary: '{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}'
 checksum:
   name_template: 'checksums.txt'
   extra_files:
-    - glob: ./dist/{{ .ProjectName }}_darwin_amd64/*
-    - glob: ./dist/{{ .ProjectName }}_linux_amd64/*
+    - glob: ./dist/{{ .ProjectName }}_darwin_amd64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_linux_amd64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_windows_amd64_v1/*
+nfpms:
+  - formats:
+      - deb
+      - rpm
+    bindir: /usr/local/bin
+    homepage: https://github.com/christianTragesser/dnsexit-ip-update
+    maintainer: Christian Tragesser
+    description: "A DNSExit dynamic ip address DNS client"
+    license: MIT
 snapshot:
   name_template: '{{ incpatch .Version }}-rc_{{ .ShortCommit }}'
 changelog:
@@ -30,8 +42,9 @@ changelog:
       - 'gitlab'
 release:
   extra_files:
-    - glob: ./dist/{{ .ProjectName }}_darwin_amd64/*
-    - glob: ./dist/{{ .ProjectName }}_linux_amd64/*
+    - glob: ./dist/{{ .ProjectName }}_darwin_amd64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_linux_amd64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_windows_amd64_v1/*
 brews:
   - name: '{{ .ProjectName }}'
     tap:
@@ -48,4 +61,4 @@ brews:
       system "rm -f /usr/local/bin/dnsexit || true"
       system "ln -s #{bin}/dnsexit-* /usr/local/bin/dnsexit"
     test: |
-        system "#{bin}/dnsexit version"
+        system "/usr/local/bin/dnsexit version"
