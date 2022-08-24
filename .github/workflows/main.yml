@@ -1,4 +1,4 @@
-name: Main
+name: Publish
 
 on:
   push:
@@ -28,6 +28,7 @@ jobs:
         run: go test -v --cover ./dnsexit
   
   publish:
+    needs: unit-test
     runs-on: ubuntu-latest
     container: registry.gitlab.com/christiantragesser/gitlab-ci-templates/intermodal
     steps:
