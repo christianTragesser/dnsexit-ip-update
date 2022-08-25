@@ -14,8 +14,6 @@ const (
 	recordTTL  int    = 480
 )
 
-var logd = GetLogger("dynamic")
-
 type updateRecord struct {
 	Type    string `json:"type"`
 	Name    string `json:"name"`
@@ -46,7 +44,7 @@ func (r Event) setUpdate(event Event) (Event, error) {
 
 	req, err := http.NewRequest("POST", event.URL, data)
 	if err != nil {
-		logd.Errorln("Failed to create HTTP POST to DNSExit API.")
+		log.Errorln("Failed to create HTTP POST to DNSExit API.")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -56,8 +54,8 @@ func (r Event) setUpdate(event Event) (Event, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		logd.Error(err)
-		logd.Errorln("HTTP POST failed for dynamic update.")
+		log.Error(err)
+		log.WithFields(updateLogFields).Error("API POST failed for dynamic update.")
 
 		return responseData, err
 	}
@@ -65,11 +63,17 @@ func (r Event) setUpdate(event Event) (Event, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logd.Error(err)
-		logd.Errorln("Failed to read API response body.")
+		log.Error(err)
+		log.Errorln("Failed to read API response body.")
 	}
 
 	err = json.Unmarshal(body, &responseData)
+
+	if responseData.Code != 0 {
+		updateLogFields["status"] = responseData.Code
+
+		log.WithFields(updateLogFields).Error(responseData.Message)
+	}
 
 	return responseData, err
 }
@@ -77,7 +81,7 @@ func (r Event) setUpdate(event Event) (Event, error) {
 func dynamicUpdate(api dnsExitAPI, event Event) (Event, error) {
 	eventResponse, err := api.setUpdate(event)
 	if err != nil {
-		logd.Errorln("Failed to set A record update.")
+		log.WithFields(updateLogFields).Error("Failed to set A record update.")
 	}
 
 	return eventResponse, err
@@ -87,17 +91,17 @@ func hasDepencies(event Event) bool {
 	var eventReady = true
 
 	if event.APIKey == "" {
-		logd.Errorln("Missing API Key.")
+		log.Errorln("Missing API Key.")
 		eventReady = false
 	}
 
 	if event.Record.Name == "" {
-		logd.Errorln("Missing DNSExit domain name.")
+		log.Errorln("Missing DNSExit domain name.")
 		eventReady = false
 	}
 
 	if event.Record.Content != "" && net.ParseIP(event.Record.Content) == nil {
-		logd.Errorf("Invalid A record content provided: %s", event.Record.Content)
+		log.Errorf("Invalid A record content provided: %s", event.Record.Content)
 		eventReady = false
 	}
 

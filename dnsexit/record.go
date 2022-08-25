@@ -7,8 +7,6 @@ import (
 	"net/http"
 )
 
-var logs = GetLogger("status")
-
 type recordStatusAPI interface {
 	getRecords(domain string) []net.IP
 	getLocationIP() string
@@ -19,8 +17,12 @@ type recordStatus struct{}
 func (c recordStatus) getRecords(domain string) []net.IP {
 	ips, err := net.LookupIP(domain)
 	if err != nil {
-		logs.Error(err)
-		logs.Errorf("Failed to resolve hostname %s.", domain)
+		recordLogFields["domain"] = domain
+
+		log.Error(err)
+		log.WithFields(recordLogFields).Error("Failed DNS query")
+
+		return []net.IP{}
 	}
 
 	return ips
@@ -31,53 +33,60 @@ func (d recordStatus) getLocationIP() string {
 		IP string `json:"ip"`
 	}
 
-	var data responseData
+	data := responseData{}
 
 	url := "https://ifconfig.co"
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		logs.Error(err)
-		logs.Errorln("Failed create HTTP request client.")
+		log.Errorln("Failed create HTTP request client.")
 	}
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		logs.Error(err)
-		logs.Errorln("IP address HTTP request failed.")
+		log.Error(err)
+		log.WithFields(recordLogFields).Error("Failed to determine location IP address.")
+
+		return ""
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logs.Error(err)
-		logs.Errorln("Failed to read site IP address response body.")
+		log.Error(err)
+		log.Errorln("Failed to read site IP address response body.")
 	}
 	defer resp.Body.Close()
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		logs.Error(err)
-		logs.Errorln("Failed to retrieve site IP address.")
+		log.Error(err)
+		log.Errorln("Failed to retrieve site IP address.")
 	}
 
 	return data.IP
 }
 
 func recordIsCurrent(api recordStatusAPI, event Event) bool {
+	recordLogFields["IP"] = event.Record.Content
+	recordLogFields["domain"] = event.Record.Name
 
 	if event.Record.Content == "" {
 		event.Record.Content = api.getLocationIP()
-		logs.Infof("Using IP address %s for %s A record value.", event.Record.Content, event.Record.Name)
+		if event.Record.Content == "" {
+			return true
+		}
+
+		log.WithFields(recordLogFields).Info("Determined location address.")
 	} else {
-		logs.Infof("Using preferred IP address %s for %s A Record value.", event.Record.Content, event.Record.Name)
+		log.WithFields(recordLogFields).Info("IP address argument provided.")
 	}
 
 	currentRecords := api.getRecords(event.Record.Name)
 
 	for _, record := range currentRecords {
 		if event.Record.Content == record.String() {
-			logs.Infof("A record for %s domain is up to date.", event.Record.Name)
+			log.Infof("A record for %s domain is up to date.", event.Record.Name)
 			return true
 		}
 	}

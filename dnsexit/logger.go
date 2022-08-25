@@ -6,7 +6,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetLogger(name string) *logrus.Entry {
+var log = GetLogger()
+var cliLogFields = logrus.Fields{}
+var updateLogFields = logrus.Fields{"component": "update"}
+var recordLogFields = logrus.Fields{"component": "record"}
+
+func GetLogger() *logrus.Logger {
 	customFormatter := new(logrus.TextFormatter)
 	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
 	customFormatter.FullTimestamp = true
@@ -17,7 +22,5 @@ func GetLogger(name string) *logrus.Entry {
 
 	log.Out = os.Stdout
 
-	logger := log.WithFields(logrus.Fields{"name": name})
-
-	return logger
+	return log
 }

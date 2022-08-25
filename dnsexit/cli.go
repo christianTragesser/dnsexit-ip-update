@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-var logc = GetLogger("cli")
-
 func CLIArgs() {
 	cliDomain := flag.String("domain", "", "DNSExit domain name")
 	cliKey := flag.String("key", "", "DNSExit API key")
@@ -41,13 +39,16 @@ func CLIWorkflow(cliEvent Event) {
 
 	if hasDepencies(cliEvent) {
 		if !recordIsCurrent(statusAPI, cliEvent) {
+			cliLogFields["domain"] = cliEvent.Record.Name
+			cliLogFields["A record"] = cliEvent.Record.Content
+
 			response, err = dynamicUpdate(response, cliEvent)
 			if err != nil {
-				logc.Errorln("Dynamic IP update failed.")
+				log.WithFields(cliLogFields).Error("Dynamic IP update failed.")
 			}
 
-			if response.Message != "" {
-				logc.Infoln(response)
+			if response.Code == 0 && response.Message != "" {
+				log.WithFields(cliLogFields).Info(response.Message)
 			}
 		}
 	} else {
