@@ -48,7 +48,7 @@ func CLIWorkflow(cliEvent Event) {
 			}
 
 			if response.Code == 0 && response.Message != "" {
-				log.WithFields(cliLogFields).Info(response.Message)
+				log.WithFields(cliLogFields).Infoln(response.Message)
 			}
 		}
 	} else {

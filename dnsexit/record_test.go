@@ -1,17 +1,16 @@
 package dnsexit
 
 import (
-	"net"
 	"testing"
 )
 
 type mockRecordStatus struct {
-	currentRecord net.IP
+	currentRecord string
 	currentIP     string
 }
 
-func (c mockRecordStatus) getRecords(domain string) []net.IP {
-	return []net.IP{c.currentRecord}
+func (c mockRecordStatus) getRecords(domain string) []string {
+	return []string{c.currentRecord}
 }
 
 func (d mockRecordStatus) getLocationIP() string {
@@ -22,7 +21,7 @@ func TestRecordCheck(t *testing.T) {
 	tests := []struct {
 		name          string
 		currentIP     string
-		currentRecord net.IP
+		currentRecord string
 		desiredIP     string
 		domain        string
 		expect        bool
@@ -31,7 +30,7 @@ func TestRecordCheck(t *testing.T) {
 			name:          "A record update",
 			domain:        "test.io",
 			currentIP:     "1.1.1.1",
-			currentRecord: net.IP{1, 2, 3, 4},
+			currentRecord: "1.2.3.4",
 			desiredIP:     "2.2.2.2",
 			expect:        false,
 		},
@@ -39,7 +38,7 @@ func TestRecordCheck(t *testing.T) {
 			name:          "A record current",
 			domain:        "test.io",
 			currentIP:     "1.1.1.1",
-			currentRecord: net.IP{1, 1, 1, 1},
+			currentRecord: "1.1.1.1",
 			desiredIP:     "1.1.1.1",
 			expect:        true,
 		},
@@ -47,14 +46,14 @@ func TestRecordCheck(t *testing.T) {
 			name:          "No desired IP, no update",
 			domain:        "test.io",
 			currentIP:     "1.1.1.1",
-			currentRecord: net.IP{1, 1, 1, 1},
+			currentRecord: "1.1.1.1",
 			expect:        true,
 		},
 		{
 			name:          "No desired IP, update",
 			domain:        "test.io",
 			currentIP:     "1.1.1.1",
-			currentRecord: net.IP{1, 2, 3, 4},
+			currentRecord: "1.2.3.4",
 			expect:        false,
 		},
 	}

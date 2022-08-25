@@ -3,26 +3,25 @@ package dnsexit
 import (
 	"encoding/json"
 	"io"
-	"net"
 	"net/http"
 )
 
 type recordStatusAPI interface {
-	getRecords(domain string) []net.IP
+	getRecords(domain string) []string
 	getLocationIP() string
 }
 
 type recordStatus struct{}
 
-func (c recordStatus) getRecords(domain string) []net.IP {
-	ips, err := net.LookupIP(domain)
+func (c recordStatus) getRecords(domain string) []string {
+	ips, err := dnsLookup(domain)
 	if err != nil {
 		recordLogFields["domain"] = domain
 
 		log.Error(err)
 		log.WithFields(recordLogFields).Error("Failed DNS query")
 
-		return []net.IP{}
+		return []string{}
 	}
 
 	return ips
@@ -68,7 +67,6 @@ func (d recordStatus) getLocationIP() string {
 }
 
 func recordIsCurrent(api recordStatusAPI, event Event) bool {
-	recordLogFields["IP"] = event.Record.Content
 	recordLogFields["domain"] = event.Record.Name
 
 	if event.Record.Content == "" {
@@ -77,6 +75,7 @@ func recordIsCurrent(api recordStatusAPI, event Event) bool {
 			return true
 		}
 
+		recordLogFields["IP"] = event.Record.Content
 		log.WithFields(recordLogFields).Info("Determined location address.")
 	} else {
 		log.WithFields(recordLogFields).Info("IP address argument provided.")
@@ -85,7 +84,7 @@ func recordIsCurrent(api recordStatusAPI, event Event) bool {
 	currentRecords := api.getRecords(event.Record.Name)
 
 	for _, record := range currentRecords {
-		if event.Record.Content == record.String() {
+		if event.Record.Content == record {
 			log.Infof("A record for %s domain is up to date.", event.Record.Name)
 			return true
 		}
