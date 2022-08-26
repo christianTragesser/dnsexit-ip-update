@@ -18,8 +18,7 @@ func (c recordStatus) getRecords(domain string) []string {
 	if err != nil {
 		recordLogFields["domain"] = domain
 
-		log.Error(err)
-		log.WithFields(recordLogFields).Error("Failed DNS query")
+		log.WithFields(recordLogFields).Error(err)
 
 		return []string{}
 	}
@@ -83,11 +82,16 @@ func recordIsCurrent(api recordStatusAPI, event Event) bool {
 
 	currentRecords := api.getRecords(event.Record.Name)
 
-	for _, record := range currentRecords {
-		if event.Record.Content == record {
-			log.Infof("A record for %s domain is up to date.", event.Record.Name)
-			return true
+	if len(currentRecords) > 0 {
+		for _, record := range currentRecords {
+			if event.Record.Content == record {
+				log.Infof("A record for %s domain is up to date.", event.Record.Name)
+
+				return true
+			}
 		}
+
+		return false
 	}
 
 	return false

@@ -56,6 +56,13 @@ func TestRecordCheck(t *testing.T) {
 			currentRecord: "1.2.3.4",
 			expect:        false,
 		},
+		{
+			name:          "No desired IP, no update",
+			domain:        "test.io",
+			currentIP:     "",
+			currentRecord: "",
+			expect:        true,
+		},
 	}
 
 	for _, tc := range tests {
