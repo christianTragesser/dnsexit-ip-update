@@ -79,6 +79,10 @@ func (r Event) setUpdate(event Event) (Event, error) {
 }
 
 func dynamicUpdate(api dnsExitAPI, event Event) (Event, error) {
+	if event.Record.Content == "" {
+		event.Record.Content = recordStatus{}.getLocationIP()
+	}
+
 	eventResponse, err := api.setUpdate(event)
 	if err != nil {
 		log.WithFields(updateLogFields).Error("Failed to set A record update.")
