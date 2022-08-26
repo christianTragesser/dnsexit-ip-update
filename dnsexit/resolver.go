@@ -10,7 +10,7 @@ import (
 var nameservers = [4]string{"162.244.82.74", "198.204.241.154", "204.27.62.66", "69.197.184.202"}
 
 func dnsLookup(domain string) ([]string, error) {
-	srvNum := rand.Intn(len(nameservers))
+	srvNum := rand.Intn(len(&nameservers))
 	nameserver := nameservers[srvNum]
 
 	r := &net.Resolver{
@@ -22,7 +22,13 @@ func dnsLookup(domain string) ([]string, error) {
 			return d.DialContext(ctx, network, nameserver+":53")
 		},
 	}
+
 	ip, err := r.LookupHost(context.Background(), domain)
+
+	resolverLogFields["nameserver"] = nameserver
+	resolverLogFields["domain"] = domain
+	resolverLogFields["result"] = ip
+	log.WithFields(resolverLogFields).Info("DNS resolution.")
 
 	return ip, err
 }
