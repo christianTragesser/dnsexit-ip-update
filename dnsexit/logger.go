@@ -10,6 +10,7 @@ var log = GetLogger()
 var cliLogFields = logrus.Fields{}
 var updateLogFields = logrus.Fields{"component": "update"}
 var recordLogFields = logrus.Fields{"component": "record"}
+var resolverLogFields = logrus.Fields{"component": "resolver"}
 
 func GetLogger() *logrus.Logger {
 	customFormatter := new(logrus.TextFormatter)
