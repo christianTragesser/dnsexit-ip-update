@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var nameservers = [4]string{"162.244.82.74", "198.204.241.154", "204.27.62.66", "69.197.184.202"}
+var nameservers = [3]string{"198.204.241.154", "204.27.62.66", "69.197.184.202"}
 
 func dnsLookup(domain string) ([]string, error) {
 	srvNum := rand.Intn(len(&nameservers))
