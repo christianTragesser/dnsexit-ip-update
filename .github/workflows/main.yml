@@ -28,7 +28,7 @@ jobs:
         run: go test -v --cover ./dnsexit
   
   publish:
-    needs: unit-test
+    needs: [ lint, unit-test ]
     runs-on: ubuntu-latest
     container: registry.gitlab.com/christiantragesser/gitlab-ci-templates/intermodal:latest
     steps:
