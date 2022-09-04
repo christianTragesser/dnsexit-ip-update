@@ -66,6 +66,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          file: ./pkg/Dockerfile
+          file: "./pkg/Dockerfile"
           push: true
-          tags: [ christiantragesser/dnsexit-ip-update:${{ github.sha }}, christiantragesser/dnsexit-ip-update:latest ]
+          tags: christiantragesser/dnsexit-ip-update:latest
