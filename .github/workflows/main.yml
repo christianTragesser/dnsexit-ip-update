@@ -1,4 +1,4 @@
-name: Test
+name: CI
 
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
       - name: Run unit tests
         run: go test -v --cover ./dnsexit
   
-  publish:
+  build:
     needs: [ lint, unit-test ]
     runs-on: ubuntu-latest
     container: registry.gitlab.com/christiantragesser/gitlab-ci-templates/intermodal:latest
@@ -35,27 +35,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: build 
+      - name: binary builds
         run: goreleaser build --snapshot
-
-    #- name: Configure docker client 
-    #  run: |
-    #    mkdir -p /kaniko/.docker && \
-    #    cat << EOF > /kaniko/.docker/config.json
-    #    {
-    #      "auths": {
-    #        "registry.gitlab.com": {
-    #          "auth": "$(echo -n ${{ secrets.GITLAB_REGISTRY_USER }}:${{ secrets.GITLAB_REGISTRY_PAT }} | base64)"
-    #        }
-    #      }
-    #    }
-    #    EOF
-
-    #- name: Publish container image 
-    #  run: |
-    #    /kaniko/executor
-    #    --context .
-    #    --dockerfile ./pkg/Dockerfile
-    #    --destination registry.gitlab.com/christiantragesser/dnsexit-ip-update:golang-client
-    #    --skip-unused-stages
-    #    --target publish
+      
+      - uses: actions/cache@v2
+        id: app-binaries
+        with:
+          path: ./dist/dnsexit_linux_amd64_v1/dnsexit-linux-amd64
+          key: ${{ github.sha }}
+  
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v2
+        id: app-binaries
+        with:
+          path: ./dist/dnsexit_linux_amd64_v1/dnsexit-linux-amd64
+          key: ${{ github.sha }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          file: ./pkg/Dockerfile
+          push: true
+          tags: 
+            - christiantragesser/dnsexit-ip-update:${{ github.sha }}
+            - christiantragesser/dnsexit-ip-update:latest
