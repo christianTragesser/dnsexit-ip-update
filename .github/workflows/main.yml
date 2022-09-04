@@ -68,6 +68,4 @@ jobs:
         with:
           file: ./pkg/Dockerfile
           push: true
-          tags: 
-            - christiantragesser/dnsexit-ip-update:${{ github.sha }}
-            - christiantragesser/dnsexit-ip-update:latest
+          tags: [ christiantragesser/dnsexit-ip-update:${{ github.sha }}, christiantragesser/dnsexit-ip-update:latest ]
