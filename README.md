@@ -1,43 +1,47 @@
 # dnsexit-ip-update
-[![pipeline status](https://gitlab.com/christianTragesser/dnsexit-ip-update/badges/master/pipeline.svg)](https://gitlab.com/christianTragesser/dnsexit-ip-update/commits/master)
+[![CI](https://github.com/christianTragesser/dnsexit-ip-update/actions/workflows/ci.yml/badge.svg)](https://github.com/christianTragesser/dnsexit-ip-update/actions/workflows/ci.yml)
 
 A dynamic DNS client for [DNSExit](https://www.dnsexit.com/) registered domains.
 
-Before using this client it is **strongly recommended** you create a [Dynamic IP Update Password](https://www.dnsexit.com/Direct.sv?cmd=userProfilePwIP) for your account rather than using your DNSExit account login credentials.
+This client was built according to the [DNS API Guide](https://dnsexit.com/dns/dns-api/#guide-to-use).  
+Before using this client you must create an [DNSExit DNS API key](https://dnsexit.com/dns/dns-api/#apikey).
 
-This client was built according to the DNSExit IP Update [specification document](http://downloads.dnsexit.com/ipUpdateDev.doc).
+## Install
+#### Container Image
+[`christiantragesser/dnsexit-ip-update`](https://hub.docker.com/r/christiantragesser/dnsexit-ip-update) 
 
-### Install
-#### [PyPi](https://pypi.org/project/dnsexit-ip-update/)
-For systems using Python 3.6 or later, there is pip package available:
-```sh
-$ pip install dnsexit-ip-update
+## Use
 ```
-#### [Docker](https://gitlab.com/christianTragesser/dnsexit-ip-update/container_registry) (suggested)
-This package is available as a docker image as well.
-
-`registry.gitlab.com/christiantragesser/dnsexit-ip-update`
-
-### Configure and Run
-#### Python Package
-```sh
-$ export LOGIN="<your dnsexit login>"
-$ export PASSWORD="<your dnsexit IP Update password>"
-$ export DOMAIN="<your dnsexit registered domain>"
-$ python -m dnsexitUpdate
+$ dnsexit -h
+Usage of dnsexit:
+  -domain string
+    	DNSExit domain name
+  -interval int
+    	Time interval in minutes (default 10)
+  -ip string
+    	Desired A record IP address
+  -key string
+    	DNSExit API key
 ```
-#### Docker
-```sh
-$ docker run -d -e LOGIN="<your dnsexit login>" \
-                -e PASSWORD="<your dnsexit IP Update password>" \
-                -e DOMAIN="<your dnsexit registered domain>" \
-                registry.gitlab.com/christiantragesser/dnsexit-ip-update
+#### Binary
+```
+$ dnsexit -domain <dnsexit domain> -key <API key>
+```
+#### Container Instance
+```
+$ docker run -d christiantragesser/dnsexit-ip-update -domain <dnsexit domain> -key <API key>
 ```
 
-### Configure Options
+### Options
 **Check Interval**  
-By default IP update checks happen in 10 minute intervals.  This cadence can be changed by setting the enviromental variable `CHECK_INTERVAL` to the desired interval in units of seconds.
-```sh
-# 20 minute interval
-export CHECK_INTERVAL=1200
+By default, IP update checks happen in 10 minute intervals.  
+This cadence can be changed by using the `-interval` flag with a value of the desired interval in minutes.
 ```
+$ dnsexit -domain <dnsexit domain> -key <API key> -interval 20
+```  
+**Preferred IP Address**  
+By default, the client configures DNS A record updates using a discovered egress IP address.  
+Use the `-ip` flag with a desired IP address to override the discovered IP address value.
+```
+$ dnsexit -domain <dnsexit domain> -key <API key> -ip 5.5.5.5
+```  
