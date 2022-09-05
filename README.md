@@ -1,5 +1,6 @@
 # dnsexit-ip-update
 [![CI](https://github.com/christianTragesser/dnsexit-ip-update/actions/workflows/ci.yml/badge.svg)](https://github.com/christianTragesser/dnsexit-ip-update/actions/workflows/ci.yml)
+[![Release](https://github.com/christianTragesser/dnsexit-ip-update/actions/workflows/release.yml/badge.svg)](https://github.com/christianTragesser/dnsexit-ip-update/actions/workflows/release.yml)
 
 A dynamic DNS client for [DNSExit](https://www.dnsexit.com/) registered domains.
 
