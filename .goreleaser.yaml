@@ -1,0 +1,68 @@
+project_name: dnsexit
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+      - GOFLAGS=-buildvcs=false
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - linux
+      - darwin
+      - windows
+    binary: '{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}'
+checksum:
+  name_template: 'checksums.txt'
+  extra_files:
+    - glob: ./dist/{{ .ProjectName }}_darwin_amd64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_darwin_arm64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_linux_amd64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_linux_arm64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_windows_amd64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_windows_arm64_v1/*
+nfpms:
+  - formats:
+      - deb
+      - rpm
+    bindir: /usr/local/bin
+    homepage: https://github.com/christianTragesser/dnsexit-ip-update
+    maintainer: Christian Tragesser
+    description: "A DNSExit dynamic ip address DNS client"
+    license: MIT
+snapshot:
+  name_template: '{{ incpatch .Version }}-rc_{{ .ShortCommit }}'
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - 'test'
+      - 'correct'
+      - '^WIP'
+      - 'README'
+      - 'attempt'
+release:
+  extra_files:
+    - glob: ./dist/{{ .ProjectName }}_darwin_amd64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_linux_amd64_v1/*
+    - glob: ./dist/{{ .ProjectName }}_windows_amd64_v1/*
+brews:
+  - name: '{{ .ProjectName }}'
+    tap:
+        owner: christiantragesser
+        name: homebrew-tap
+    folder: Formula
+    commit_author:
+        name: goreleaserbot
+        email: release-bot@evoen.net
+    homepage: "https://github.com/christianTragesser/dnsexit-ip-update"
+    description: "A DNSExit dynamic ip address DNS client"
+    license: "MIT"
+    post_install: |
+      system "rm -f /usr/local/bin/dnsexit || true"
+      system "ln -s #{bin}/dnsexit-* /usr/local/bin/dnsexit"
+    test: |
+        system "/usr/local/bin/dnsexit version"
