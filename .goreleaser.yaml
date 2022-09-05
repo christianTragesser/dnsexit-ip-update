@@ -40,7 +40,7 @@ changelog:
       - 'correct'
       - '^WIP'
       - 'README'
-      - 'gitlab'
+      - 'attempt'
 release:
   extra_files:
     - glob: ./dist/{{ .ProjectName }}_darwin_amd64_v1/*
