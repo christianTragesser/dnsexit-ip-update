@@ -8,8 +8,19 @@ This client was built according to the [DNS API Guide](https://dnsexit.com/dns/d
 Before using this client you must create an [DNSExit DNS API key](https://dnsexit.com/dns/dns-api/#apikey).
 
 ## Install
+#### Binaries
+Binaries for Linux, MacOS, and Windows 64-bit architectures can be found on the [releases page](https://github.com/christianTragesser/dnsexit-ip-update/releases).
+
+#### Homebrew Tap
+```
+brew install christiantragesser/tap/dnsexit
+```
+
 #### Container Image
-[`christiantragesser/dnsexit-ip-update`](https://hub.docker.com/r/christiantragesser/dnsexit-ip-update) 
+[christiantragesser/dnsexit-ip-update](https://hub.docker.com/r/christiantragesser/dnsexit-ip-update) 
+
+#### Linux Install Package
+64-bit architecture DEB and RPM packages can be found on the [releases page](https://github.com/christianTragesser/dnsexit-ip-update/releases).
 
 ## Use
 ```
