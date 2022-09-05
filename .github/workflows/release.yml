@@ -1,26 +1,31 @@
 name: Release
 
 on:
-  push:
+  create:
     tags:
-      - "v[0-9]+.[0-9]+"
+      - 'v[0-9]+.[0-9]+'
 
   workflow_dispatch:
 
 jobs:
   binary-release:
     runs-on: ubuntu-latest
-    container: registry.gitlab.com/christiantragesser/gitlab-ci-templates/intermodal:latest
+    container: registry.gitlab.com/christiantragesser/gitlab-ci-templates/intermodal:github
     env:
       GITHUB_TOKEN: ${{ secrets.GORELEASER_GITHUB_TOKEN }} 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: binary builds
-        run: goreleaser release
+      - name: Binary releases
+        run: |
+          /usr/bin/git config --global --add safe.directory /__w/dnsexit-ip-update/dnsexit-ip-update
+          goreleaser release
   
   container-image-release:
+    needs: binary-release
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx

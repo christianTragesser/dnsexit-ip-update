@@ -5,6 +5,8 @@ on:
     paths:
       - '**.go'
       - 'pkg/**'
+    tags-ignore:
+      - '**'
 
   workflow_dispatch:
 
