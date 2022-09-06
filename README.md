@@ -35,14 +35,25 @@ Usage of dnsexit:
   -key string
     	DNSExit API key
 ```
-#### Binary
+#### CLI
 ```
 $ dnsexit -domain <dnsexit domain> -key <API key>
+```  
+The values for `domain` and `key` can also be configured using environment variables.  
+CLI flag values take precedence over environment variable values.
+```
+$ export DOMAIN="<dnsexit domain>"
+$ export API_KEY="<API key>"
+$ dnsexit
 ```
 #### Container Instance
 ```
 $ docker run -d christiantragesser/dnsexit-ip-update -domain <dnsexit domain> -key <API key>
+``` 
+or
 ```
+$ docker run -d -e DOMAIN="<dnsexit domain>" -e API_KEY="<API key>" christiantragesser/dnsexit-ip-update
+``` 
 
 ### Options
 **Check Interval**  
@@ -51,9 +62,12 @@ This cadence can be changed by using the `-interval` flag with a value of the de
 ```
 $ dnsexit -domain <dnsexit domain> -key <API key> -interval 20
 ```  
+The `interval` value can also be configured by setting the environment variable `CHECK_INTERVAL`.  
+
 **Preferred IP Address**  
 By default, the client configures DNS A record updates using a discovered egress IP address.  
 Use the `-ip` flag with a desired IP address to override the discovered IP address value.
 ```
 $ dnsexit -domain <dnsexit domain> -key <API key> -ip 5.5.5.5
 ```  
+The `ip` value can also be configured by setting the environment variable `IP_ADDR`.  
