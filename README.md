@@ -56,6 +56,12 @@ $ docker run -d -e DOMAIN="<dnsexit domain>" -e API_KEY="<API key>" christiantra
 ``` 
 
 ### Options
+**Multiple DNSExit Domains**  
+Multiple DNSExit registered domains can be updated with the same A record information by providing a comma delimited list of hostnames for the `domain` value.  
+```
+$ dnsexit -domain my-site.com,your-site.io,our-site.net -key <API key>
+```
+
 **Check Interval**  
 By default, IP update checks happen in 10 minute intervals.  
 This cadence can be changed by using the `-interval` flag with a value of the desired interval in minutes.
