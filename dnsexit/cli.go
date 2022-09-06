@@ -3,6 +3,7 @@ package dnsexit
 import (
 	"flag"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -36,6 +37,26 @@ func CLIWorkflow(cliEvent Event) {
 	var response Event
 	var err error
 	statusAPI := recordStatus{}
+
+	//check for env vars and compare with flag values
+	if cliEvent.Record.Name == "" {
+		cliEvent.Record.Name = os.Getenv("DOMAIN")
+	}
+
+	if cliEvent.APIKey == "" {
+		cliEvent.APIKey = os.Getenv("API_KEY")
+	}
+
+	if cliEvent.Record.Content == "" {
+		cliEvent.Record.Content = os.Getenv("IP_ADDR")
+	}
+
+	if cliEvent.Interval == 10 {
+		env, ok := os.LookupEnv("CHECK_INTERVAL")
+		if ok {
+			cliEvent.Interval, _ = strconv.Atoi(env)
+		}
+	}
 
 	if hasDepencies(cliEvent) {
 		if !recordIsCurrent(statusAPI, cliEvent) {
