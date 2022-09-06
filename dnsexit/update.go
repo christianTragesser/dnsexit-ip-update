@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sync"
 )
 
 const (
@@ -78,19 +79,6 @@ func (r Event) setUpdate(event Event) (Event, error) {
 	return responseData, err
 }
 
-func dynamicUpdate(api dnsExitAPI, event Event) (Event, error) {
-	if event.Record.Content == "" {
-		event.Record.Content = recordStatus{}.getLocationIP()
-	}
-
-	eventResponse, err := api.setUpdate(event)
-	if err != nil {
-		log.WithFields(updateLogFields).Error("Failed to set A record update.")
-	}
-
-	return eventResponse, err
-}
-
 func hasDepencies(event Event) bool {
 	var eventReady = true
 
@@ -110,4 +98,38 @@ func hasDepencies(event Event) bool {
 	}
 
 	return eventReady
+}
+
+func setUpdate(wg *sync.WaitGroup, event Event) {
+	defer wg.Done()
+	var response Event
+	var err error
+	statusAPI := recordStatus{}
+
+	if !recordIsCurrent(statusAPI, event) {
+		updateLogFields["domain"] = event.Record.Name
+		updateLogFields["A record"] = event.Record.Content
+
+		response, err = dynamicUpdate(response, event)
+		if err != nil {
+			log.WithFields(updateLogFields).Error("Dynamic IP update failed.")
+		}
+
+		if response.Code == 0 && response.Message != "" {
+			log.WithFields(updateLogFields).Infoln(response.Message)
+		}
+	}
+}
+
+func dynamicUpdate(api dnsExitAPI, event Event) (Event, error) {
+	if event.Record.Content == "" {
+		event.Record.Content = recordStatus{}.getLocationIP()
+	}
+
+	eventResponse, err := api.setUpdate(event)
+	if err != nil {
+		log.WithFields(updateLogFields).Error("Failed to set A record update.")
+	}
+
+	return eventResponse, err
 }

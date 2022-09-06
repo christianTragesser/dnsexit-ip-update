@@ -4,6 +4,8 @@ import (
 	"flag"
 	"os"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -34,10 +36,6 @@ func CLIArgs() {
 }
 
 func CLIWorkflow(cliEvent Event) {
-	var response Event
-	var err error
-	statusAPI := recordStatus{}
-
 	//check for env vars and compare with flag values
 	if cliEvent.Record.Name == "" {
 		cliEvent.Record.Name = os.Getenv("DOMAIN")
@@ -52,26 +50,27 @@ func CLIWorkflow(cliEvent Event) {
 	}
 
 	if cliEvent.Interval == 10 {
-		env, ok := os.LookupEnv("CHECK_INTERVAL")
-		if ok {
+		env, varSet := os.LookupEnv("CHECK_INTERVAL")
+		if varSet {
 			cliEvent.Interval, _ = strconv.Atoi(env)
 		}
 	}
 
 	if hasDepencies(cliEvent) {
-		if !recordIsCurrent(statusAPI, cliEvent) {
-			cliLogFields["domain"] = cliEvent.Record.Name
-			cliLogFields["A record"] = cliEvent.Record.Content
+		domains := strings.Split(cliEvent.Record.Name, ",")
+		wg := new(sync.WaitGroup)
 
-			response, err = dynamicUpdate(response, cliEvent)
-			if err != nil {
-				log.WithFields(cliLogFields).Error("Dynamic IP update failed.")
-			}
+		wg.Add(len(domains))
 
-			if response.Code == 0 && response.Message != "" {
-				log.WithFields(cliLogFields).Infoln(response.Message)
-			}
+		for _, d := range domains {
+			instance := cliEvent
+			instance.Record.Name = d
+
+			go setUpdate(wg, instance)
 		}
+
+		wg.Wait()
+
 	} else {
 		os.Exit(0)
 	}
