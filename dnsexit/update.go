@@ -100,7 +100,7 @@ func hasDepencies(event Event) bool {
 	return eventReady
 }
 
-func setUpdate(wg *sync.WaitGroup, event Event) {
+func getUpdate(wg *sync.WaitGroup, event Event) {
 	defer wg.Done()
 	var response Event
 	var err error
