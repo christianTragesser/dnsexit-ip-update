@@ -43,7 +43,7 @@ func TestRecordCheck(t *testing.T) {
 			expect:        true,
 		},
 		{
-			name:          "No desired IP, no update",
+			name:          "Desired IP, no update",
 			domain:        "test.io",
 			currentIP:     "1.1.1.1",
 			currentRecord: "1.1.1.1",
@@ -81,6 +81,7 @@ func TestRecordCheck(t *testing.T) {
 				Record: testRecord,
 			}
 
+			testEvent.Record.Content = setRecordIP(statusAPI, testEvent)
 			got := recordIsCurrent(statusAPI, testEvent)
 
 			if got != tc.expect {

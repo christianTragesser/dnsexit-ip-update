@@ -58,6 +58,13 @@ func CLIWorkflow(cliEvent Event) {
 
 	if hasDepencies(cliEvent) {
 		domains := strings.Split(cliEvent.Record.Name, ",")
+
+		cliLogFields["domains"] = domains
+		log.WithFields(cliLogFields).Info("Checking Dynamic DNS status.")
+
+		statusAPI := recordStatus{}
+		cliEvent.Record.Content = setRecordIP(statusAPI, cliEvent)
+
 		wg := new(sync.WaitGroup)
 
 		wg.Add(len(domains))
@@ -66,7 +73,7 @@ func CLIWorkflow(cliEvent Event) {
 			instance := cliEvent
 			instance.Record.Name = d
 
-			go setUpdate(wg, instance)
+			go getUpdate(wg, instance)
 		}
 
 		wg.Wait()

@@ -65,20 +65,21 @@ func (d recordStatus) getLocationIP() string {
 	return data.IP
 }
 
-func recordIsCurrent(api recordStatusAPI, event Event) bool {
-	recordLogFields["domain"] = event.Record.Name
-
+func setRecordIP(api recordStatusAPI, event Event) string {
 	if event.Record.Content == "" {
 		event.Record.Content = api.getLocationIP()
-		if event.Record.Content == "" {
-			return true
-		}
-
 		recordLogFields["IP"] = event.Record.Content
-		log.WithFields(recordLogFields).Info("Determined location address.")
+		log.WithFields(recordLogFields).Info("Using location determined IP address.")
 	} else {
+		recordLogFields["IP"] = event.Record.Content
 		log.WithFields(recordLogFields).Info("IP address argument provided.")
 	}
+
+	return event.Record.Content
+}
+
+func recordIsCurrent(api recordStatusAPI, event Event) bool {
+	recordLogFields["domain"] = event.Record.Name
 
 	currentRecords := api.getRecords(event.Record.Name)
 
