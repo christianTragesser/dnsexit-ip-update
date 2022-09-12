@@ -63,7 +63,7 @@ func CLIWorkflow(cliEvent Event) {
 		log.WithFields(cliLogFields).Info("Checking Dynamic DNS status.")
 
 		statusAPI := recordStatus{}
-		cliEvent.Record.Content = setRecordIP(statusAPI, cliEvent)
+		recordIP := setRecordIP(statusAPI, cliEvent)
 
 		wg := new(sync.WaitGroup)
 
@@ -71,6 +71,7 @@ func CLIWorkflow(cliEvent Event) {
 
 		for _, d := range domains {
 			instance := cliEvent
+			instance.Record.Content = recordIP
 			instance.Record.Name = d
 
 			go getUpdate(wg, instance)
