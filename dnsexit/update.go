@@ -4,42 +4,86 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"net"
 	"net/http"
 	"sync"
 )
 
-const (
-	apiURL     string = "https://api.dnsexit.com/dns/"
-	recordType string = "A"
-	recordTTL  int    = 480
-)
-
-type updateRecord struct {
+type UpdateRecord struct {
 	Type    string `json:"type"`
 	Name    string `json:"name"`
 	Content string `json:"content"`
 	TTL     int    `json:"ttl"`
 }
 
-type Event struct {
-	Code     int      `json:"code"`
-	Details  []string `json:"details"`
-	Message  string   `json:"message"`
+type updateEvent struct {
 	URL      string
 	APIKey   string
-	Record   updateRecord
+	Record   UpdateRecord
 	Interval int
 }
 
-type dnsExitAPI interface {
-	setUpdate(event Event) (Event, error)
+type UpdateResponse struct {
+	Code    int      `json:"code"`
+	Details []string `json:"details"`
+	Message string   `json:"message"`
 }
 
-func (r Event) setUpdate(event Event) (Event, error) {
-	var responseData Event
+func (u *UpdateRecord) getLocationIP() string {
+	type responseData struct {
+		IP string `json:"ip"`
+	}
 
-	updatePayload := map[string]updateRecord{"update": event.Record}
+	data := responseData{}
+
+	url := "https://ifconfig.co"
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Errorln("Failed create HTTP request client.")
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Error(err)
+		log.WithFields(recordLogFields).Error("Failed to determine location IP address.")
+
+		return ""
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(err)
+		log.Errorln("Failed to read site IP address response body.")
+	}
+	defer resp.Body.Close()
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		log.Error(err)
+		log.Errorln("Failed to retrieve site IP address.")
+	}
+
+	return data.IP
+}
+
+func (c *UpdateRecord) getCurrentARecord(domain string) []string {
+	ips, err := getARecord(domain)
+	if err != nil {
+		recordLogFields["domain"] = domain
+
+		log.WithFields(recordLogFields).Error(err)
+
+		return []string{}
+	}
+
+	return ips
+}
+
+func (r *updateEvent) postUpdate(event updateEvent) (UpdateResponse, error) {
+	var response UpdateResponse
+
+	updatePayload := map[string]UpdateRecord{"update": event.Record}
 	jsonPayload, _ := json.Marshal(updatePayload)
 	data := bytes.NewReader([]byte(jsonPayload))
 
@@ -58,7 +102,7 @@ func (r Event) setUpdate(event Event) (Event, error) {
 		log.Error(err)
 		log.WithFields(updateLogFields).Error("API POST failed for dynamic update.")
 
-		return responseData, err
+		return response, err
 	}
 	defer resp.Body.Close()
 
@@ -68,68 +112,35 @@ func (r Event) setUpdate(event Event) (Event, error) {
 		log.Errorln("Failed to read API response body.")
 	}
 
-	err = json.Unmarshal(body, &responseData)
+	err = json.Unmarshal(body, &response)
 
-	if responseData.Code != 0 {
-		updateLogFields["status"] = responseData.Code
+	if response.Code != 0 {
+		updateLogFields["status"] = response.Code
 
-		log.WithFields(updateLogFields).Error(responseData.Message)
+		log.WithFields(updateLogFields).Error(response.Message)
 	}
 
-	return responseData, err
+	return response, err
 }
 
-func hasDepencies(event Event) bool {
-	var eventReady = true
-
-	if event.APIKey == "" {
-		log.Errorln("Missing API Key.")
-		eventReady = false
-	}
-
-	if event.Record.Name == "" {
-		log.Errorln("Missing DNSExit domain name.")
-		eventReady = false
-	}
-
-	if event.Record.Content != "" && net.ParseIP(event.Record.Content) == nil {
-		log.Errorf("Invalid A record content provided: %s", event.Record.Content)
-		eventReady = false
-	}
-
-	return eventReady
-}
-
-func getUpdate(wg *sync.WaitGroup, event Event) {
+func update(wg *sync.WaitGroup, event *updateEvent) {
 	defer wg.Done()
-	var response Event
-	var err error
-	statusAPI := recordStatus{}
 
-	if !recordIsCurrent(statusAPI, event) {
+	if !recordIsCurrent(event) {
 		updateLogFields["domain"] = event.Record.Name
 		updateLogFields["A record"] = event.Record.Content
 
-		response, err = dynamicUpdate(response, event)
+		if event.Record.Content == "" {
+			event.Record.Content = event.Record.getLocationIP()
+		}
+
+		response, err := event.postUpdate(*event)
 		if err != nil {
-			log.WithFields(updateLogFields).Error("Dynamic IP update failed.")
+			log.WithFields(updateLogFields).Error("Failed to update A record.")
 		}
 
 		if response.Code == 0 && response.Message != "" {
 			log.WithFields(updateLogFields).Infoln(response.Message)
 		}
 	}
-}
-
-func dynamicUpdate(api dnsExitAPI, event Event) (Event, error) {
-	if event.Record.Content == "" {
-		event.Record.Content = recordStatus{}.getLocationIP()
-	}
-
-	eventResponse, err := api.setUpdate(event)
-	if err != nil {
-		log.WithFields(updateLogFields).Error("Failed to set A record update.")
-	}
-
-	return eventResponse, err
 }

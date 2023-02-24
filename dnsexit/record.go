@@ -1,73 +1,19 @@
 package dnsexit
 
 import (
-	"encoding/json"
-	"io"
-	"net/http"
+	"context"
+	"math/rand"
+	"net"
+	"time"
 )
 
-type recordStatusAPI interface {
-	getRecords(domain string) []string
-	getLocationIP() string
-}
+var nameservers = [3]string{"198.204.241.154", "204.27.62.66", "69.197.184.202"}
 
-type recordStatus struct{}
-
-func (c recordStatus) getRecords(domain string) []string {
-	ips, err := dnsLookup(domain)
-	if err != nil {
-		recordLogFields["domain"] = domain
-
-		log.WithFields(recordLogFields).Error(err)
-
-		return []string{}
-	}
-
-	return ips
-}
-
-func (d recordStatus) getLocationIP() string {
-	type responseData struct {
-		IP string `json:"ip"`
-	}
-
-	data := responseData{}
-
-	url := "https://ifconfig.co"
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		log.Errorln("Failed create HTTP request client.")
-	}
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Error(err)
-		log.WithFields(recordLogFields).Error("Failed to determine location IP address.")
-
-		return ""
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Error(err)
-		log.Errorln("Failed to read site IP address response body.")
-	}
-	defer resp.Body.Close()
-
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		log.Error(err)
-		log.Errorln("Failed to retrieve site IP address.")
-	}
-
-	return data.IP
-}
-
-func setRecordIP(api recordStatusAPI, event Event) string {
+func setRecordIP(event *updateEvent) string {
+	// check for IP flag
+	// use current egress IP if no IP flag provided
 	if event.Record.Content == "" {
-		event.Record.Content = api.getLocationIP()
+		event.Record.Content = event.Record.getLocationIP()
 		recordLogFields["IP"] = event.Record.Content
 		log.WithFields(recordLogFields).Info("Using location determined IP address.")
 	} else {
@@ -78,10 +24,36 @@ func setRecordIP(api recordStatusAPI, event Event) string {
 	return event.Record.Content
 }
 
-func recordIsCurrent(api recordStatusAPI, event Event) bool {
+func getARecord(domain string) ([]string, error) {
+	// take in domain name
+	// use dnsexit nameservers to resolve current A record IP address
+	srvNum := rand.Intn(len(&nameservers))
+	nameserver := nameservers[srvNum]
+
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: time.Millisecond * time.Duration(10000),
+			}
+			return d.DialContext(ctx, network, nameserver+":53")
+		},
+	}
+
+	ip, err := r.LookupHost(context.Background(), domain)
+
+	resolverLogFields["nameserver"] = nameserver
+	resolverLogFields["domain"] = domain
+	resolverLogFields["result"] = ip
+	log.WithFields(resolverLogFields).Info("DNS resolution.")
+
+	return ip, err
+}
+
+func recordIsCurrent(event *updateEvent) bool {
 	recordLogFields["domain"] = event.Record.Name
 
-	currentRecords := api.getRecords(event.Record.Name)
+	currentRecords := event.Record.getCurrentARecord(event.Record.Name)
 
 	if len(currentRecords) > 0 {
 		for _, record := range currentRecords {
