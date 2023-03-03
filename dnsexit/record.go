@@ -9,7 +9,7 @@ import (
 
 var nameservers = [3]string{"198.204.241.154", "204.27.62.66", "69.197.184.202"}
 
-func setRecordIP(event *updateEvent) string {
+func setRecordIP(event *Client) string {
 	// check for IP flag
 	// use current egress IP if no IP flag provided
 	if event.Record.Content == "" {
@@ -50,7 +50,7 @@ func getARecord(domain string) ([]string, error) {
 	return ip, err
 }
 
-func recordIsCurrent(event *updateEvent) bool {
+func recordIsCurrent(event *Client) bool {
 	recordLogFields["domain"] = event.Record.Name
 
 	currentRecords := event.Record.getCurrentARecord(event.Record.Name)

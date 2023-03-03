@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	dnsexit.CLIArgs()
+	dnsexit.CLI()
 }

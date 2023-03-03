@@ -15,13 +15,6 @@ type UpdateRecord struct {
 	TTL     int    `json:"ttl"`
 }
 
-type updateEvent struct {
-	URL      string
-	APIKey   string
-	Record   UpdateRecord
-	Interval int
-}
-
 type UpdateResponse struct {
 	Code    int      `json:"code"`
 	Details []string `json:"details"`
@@ -80,7 +73,7 @@ func (c *UpdateRecord) getCurrentARecord(domain string) []string {
 	return ips
 }
 
-func (r *updateEvent) postUpdate(event updateEvent) (UpdateResponse, error) {
+func (r *Client) postUpdate(event Client) (UpdateResponse, error) {
 	var response UpdateResponse
 
 	updatePayload := map[string]UpdateRecord{"update": event.Record}
@@ -123,7 +116,7 @@ func (r *updateEvent) postUpdate(event updateEvent) (UpdateResponse, error) {
 	return response, err
 }
 
-func update(wg *sync.WaitGroup, event *updateEvent) {
+func update(wg *sync.WaitGroup, event *Client) {
 	defer wg.Done()
 
 	if !recordIsCurrent(event) {
