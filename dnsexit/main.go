@@ -2,7 +2,6 @@ package dnsexit
 
 import (
 	"flag"
-	"fmt"
 )
 
 const (
@@ -11,13 +10,6 @@ const (
 	recordTTL       int    = 480
 	defaultInterval int    = 10
 )
-
-type Client struct {
-	URL      string
-	APIKey   string
-	Record   UpdateRecord
-	Interval int
-}
 
 func CLI() {
 	// set dynamic dns client options
@@ -35,15 +27,28 @@ func CLI() {
 		address:  *cliIPAddr,
 	}
 
-	recordData, err := cmd.setUpdateData()
+	updateRecordData, err := cmd.setUpdateData()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	client, err := cmd.setClient(recordData)
+	client, err := cmd.setClient(updateRecordData)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(client)
+	cliLogFields["domain"] = cmd.domain
+	log.WithFields(cliLogFields).Info("Checking Dynamic DNS status.")
+
+	currentIPs, err := client.currentRecords()
+	if err != nil {
+		log.Fatal("Unable to resolve the provided domain name.")
+	}
+
+	if client.current(currentIPs, client.Record.Content) {
+		cliLogFields["domain"] = client.Record.Name
+		cliLogFields["IP"] = client.Record.Content
+		cliLogFields["Type"] = client.Record.Type
+		log.WithFields(cliLogFields).Info("Dynamic DNS record is up to date.")
+	}
 }

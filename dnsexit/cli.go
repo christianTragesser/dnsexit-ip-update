@@ -2,6 +2,7 @@ package dnsexit
 
 import (
 	"errors"
+	"net"
 	"os"
 	"strconv"
 )
@@ -13,8 +14,8 @@ type CLICommand struct {
 	address  string
 }
 
-func (cmd *CLICommand) setUpdateData() (UpdateRecord, error) {
-	record := UpdateRecord{
+func (cmd *CLICommand) setUpdateData() (updateRecord, error) {
+	record := updateRecord{
 		Type:    recordType,
 		TTL:     recordTTL,
 		Name:    cmd.domain,
@@ -30,12 +31,29 @@ func (cmd *CLICommand) setUpdateData() (UpdateRecord, error) {
 		record.Name = name
 	}
 
-	return record, nil
+	if record.Content == "" {
+		address, err := getUpdateIP(record)
+		if err != nil {
+			log.WithFields(cliLogFields).Error(err)
 
+			return record, err
+		}
+
+		record.Content = address
+	} else {
+		log.WithFields(cliLogFields).Info("Using IP flag value for update status.")
+	}
+
+	// test for valid IP address
+	if net.ParseIP(record.Content) == nil {
+		return record, errors.New("Invalid IP address provided to client.")
+	}
+
+	return record, nil
 }
 
-func (cmd *CLICommand) setClient(updateData UpdateRecord) (Client, error) {
-	client := Client{
+func (cmd *CLICommand) setClient(updateData updateRecord) (client, error) {
+	client := client{
 		URL:      apiURL,
 		Record:   updateData,
 		APIKey:   cmd.key,
@@ -56,7 +74,6 @@ func (cmd *CLICommand) setClient(updateData UpdateRecord) (Client, error) {
 		if varSet {
 			client.Interval, _ = strconv.Atoi(interval)
 		}
-
 	}
 
 	return client, nil

@@ -7,9 +7,9 @@ import (
 )
 
 var log = GetLogger()
-var cliLogFields = logrus.Fields{}
-var updateLogFields = logrus.Fields{"component": "update"}
-var recordLogFields = logrus.Fields{"component": "record"}
+var cliLogFields = logrus.Fields{"component": "cli"}
+var updateRecordLogFields = logrus.Fields{"component": "update"}
+var clientLogFields = logrus.Fields{"component": "client"}
 var resolverLogFields = logrus.Fields{"component": "resolver"}
 
 func GetLogger() *logrus.Logger {

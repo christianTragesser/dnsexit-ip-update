@@ -12,7 +12,7 @@ func TestSetUpdateData(t *testing.T) {
 		cmd    CLICommand
 		envs   map[string]string
 		err    string
-		expect UpdateRecord
+		expect updateRecord
 	}{
 		{
 			name: "Flags",
@@ -23,7 +23,7 @@ func TestSetUpdateData(t *testing.T) {
 				address:  "1.1.1.1",
 			},
 			envs: map[string]string{},
-			expect: UpdateRecord{
+			expect: updateRecord{
 				Type:    recordType,
 				TTL:     recordTTL,
 				Name:    "testing",
@@ -39,7 +39,7 @@ func TestSetUpdateData(t *testing.T) {
 				address:  "1.1.1.1",
 			},
 			envs: map[string]string{"DOMAIN": "testing"},
-			expect: UpdateRecord{
+			expect: updateRecord{
 				Type:    recordType,
 				TTL:     recordTTL,
 				Name:    "testing",
@@ -56,7 +56,7 @@ func TestSetUpdateData(t *testing.T) {
 			},
 			envs: map[string]string{},
 			err:  "Missing DNSExit domain name(s).",
-			expect: UpdateRecord{
+			expect: updateRecord{
 				Type:    recordType,
 				TTL:     recordTTL,
 				Name:    "",
@@ -90,10 +90,10 @@ func TestSetClient(t *testing.T) {
 	tests := []struct {
 		name   string
 		cmd    CLICommand
-		update UpdateRecord
+		update updateRecord
 		envs   map[string]string
 		err    string
-		expect Client
+		expect client
 	}{
 		{
 			name: "Flags",
@@ -103,17 +103,17 @@ func TestSetClient(t *testing.T) {
 				interval: 10,
 				address:  "1.1.1.1",
 			},
-			update: UpdateRecord{
+			update: updateRecord{
 				Type:    recordType,
 				TTL:     recordTTL,
 				Name:    "test",
 				Content: "1.1.1.1",
 			},
 			envs: map[string]string{},
-			expect: Client{
+			expect: client{
 				URL:    apiURL,
 				APIKey: "12345",
-				Record: UpdateRecord{
+				Record: updateRecord{
 					Type:    recordType,
 					TTL:     recordTTL,
 					Name:    "test",
@@ -130,17 +130,17 @@ func TestSetClient(t *testing.T) {
 				interval: 10,
 				address:  "1.1.1.1",
 			},
-			update: UpdateRecord{
+			update: updateRecord{
 				Type:    recordType,
 				TTL:     recordTTL,
 				Name:    "test",
 				Content: "1.1.1.1",
 			},
 			envs: map[string]string{"API_KEY": "12345", "CHECK_INTERVAL": "20"},
-			expect: Client{
+			expect: client{
 				URL:    apiURL,
 				APIKey: "12345",
-				Record: UpdateRecord{
+				Record: updateRecord{
 					Type:    recordType,
 					TTL:     recordTTL,
 					Name:    "test",
@@ -157,7 +157,7 @@ func TestSetClient(t *testing.T) {
 				interval: 10,
 				address:  "1.1.1.1",
 			},
-			update: UpdateRecord{
+			update: updateRecord{
 				Type:    recordType,
 				TTL:     recordTTL,
 				Name:    "test",
@@ -165,10 +165,10 @@ func TestSetClient(t *testing.T) {
 			},
 			envs: map[string]string{},
 			err:  "Missing DNSExit API Key.",
-			expect: Client{
+			expect: client{
 				URL:    apiURL,
 				APIKey: "",
-				Record: UpdateRecord{
+				Record: updateRecord{
 					Type:    recordType,
 					TTL:     recordTTL,
 					Name:    "test",
