@@ -7,12 +7,6 @@ import (
 	"os"
 )
 
-type updateResponse struct {
-	Code    int      `json:"code"`
-	Details []string `json:"details"`
-	Message string   `json:"message"`
-}
-
 type IPAddrAPI interface {
 	getContent() string
 	egressIP() (string, error)
@@ -81,6 +75,7 @@ func getUpdateIP(ip IPAddrAPI) (string, error) {
 		address, varSet := os.LookupEnv("IP_ADDR")
 		if varSet {
 			log.WithFields(updateRecordLogFields).Info("Using environment variable IP_ADDR value for update status.")
+
 			return address, nil
 		}
 
@@ -94,27 +89,3 @@ func getUpdateIP(ip IPAddrAPI) (string, error) {
 
 	return flagIP, nil
 }
-
-/*
-func update(wg *sync.WaitGroup, event *Client) {
-	defer wg.Done()
-
-	if !updateRecordIsCurrent(event) {
-		updateLogFields["domain"] = event.updateRecord.Name
-		updateLogFields["A updateRecord"] = event.updateRecord.Content
-
-		if event.updateRecord.Content == "" {
-			event.updateRecord.Content = event.updateRecord.getLocationIP()
-		}
-
-		response, err := event.postUpdate(*event)
-		if err != nil {
-			log.WithFields(updateLogFields).Error("Failed to update A updateRecord.")
-		}
-
-		if response.Code == 0 && response.Message != "" {
-			log.WithFields(updateLogFields).Infoln(response.Message)
-		}
-	}
-}
-*/

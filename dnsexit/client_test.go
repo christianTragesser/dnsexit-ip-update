@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+//nolint:deadcode,unused
 type mockClientAPI interface {
 	getDomain() string
 	currentRecords() ([]string, error)

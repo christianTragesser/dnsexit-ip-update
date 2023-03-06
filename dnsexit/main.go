@@ -2,6 +2,9 @@ package dnsexit
 
 import (
 	"flag"
+	"strings"
+	"sync"
+	"time"
 )
 
 const (
@@ -12,7 +15,7 @@ const (
 )
 
 func CLI() {
-	// set dynamic dns client options
+	// read in CLI parameters
 	cliDomain := flag.String("domain", "", "DNSExit domain name")
 	cliKey := flag.String("key", "", "DNSExit API key")
 	cliInterval := flag.Int("interval", defaultInterval, "Time interval in minutes")
@@ -27,28 +30,49 @@ func CLI() {
 		address:  *cliIPAddr,
 	}
 
+	// construct DNSExit dynamic update record
 	updateRecordData, err := cmd.setUpdateData()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	client, err := cmd.setClient(updateRecordData)
-	if err != nil {
-		log.Fatal(err)
+	domains := strings.Split(updateRecordData.Name, ",")
+
+	// create an update client for every domain provided in CLI command
+	clients := make([]client, len(domains))
+
+	for i, d := range domains {
+		update := updateRecordData
+		update.Name = d
+
+		client, err := cmd.setClient(update)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		clients[i] = client
 	}
 
-	cliLogFields["domain"] = cmd.domain
-	log.WithFields(cliLogFields).Info("Checking Dynamic DNS status.")
+	// run clients in persistent loop
+	CLIUpdate(clients)
+}
 
-	currentIPs, err := client.currentRecords()
-	if err != nil {
-		log.Fatal("Unable to resolve the provided domain name.")
-	}
+func CLIUpdate(clients []client) {
+	if len(clients) > 0 {
+		wg := new(sync.WaitGroup)
 
-	if client.current(currentIPs, client.Record.Content) {
-		cliLogFields["domain"] = client.Record.Name
-		cliLogFields["IP"] = client.Record.Content
-		cliLogFields["Type"] = client.Record.Type
-		log.WithFields(cliLogFields).Info("Dynamic DNS record is up to date.")
+		wg.Add(len(clients))
+
+		for _, c := range clients {
+			go c.update(wg)
+		}
+
+		wg.Wait()
+
+		if clients[0].Interval > 0 {
+			time.Sleep(time.Duration(clients[0].Interval) * time.Minute)
+
+			CLIUpdate(clients)
+		}
 	}
 }
