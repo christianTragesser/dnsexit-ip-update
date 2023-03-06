@@ -112,7 +112,7 @@ func (c client) update(wg *sync.WaitGroup) {
 	if c.current(currentIPs, c.Record.Content) {
 		cliLogFields["domain"] = c.Record.Name
 		cliLogFields["IP"] = c.Record.Content
-		cliLogFields["Type"] = c.Record.Type
+		cliLogFields["type"] = c.Record.Type
 		log.WithFields(cliLogFields).Info("Dynamic DNS record is up to date.")
 	} else {
 		response, err := c.postUpdate()
