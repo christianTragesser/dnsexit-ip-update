@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestSetUpdateData(t *testing.T) {
+func TestSetUpdateDomains(t *testing.T) {
 	tests := []struct {
 		name   string
 		cmd    CLICommand
@@ -72,15 +72,15 @@ func TestSetUpdateData(t *testing.T) {
 			}
 			defer os.Unsetenv("DOMAIN")
 
-			got, err := tc.cmd.setUpdateData()
+			got, err := tc.cmd.setUpdateDomains()
 			if err != nil {
 				if !strings.Contains(err.Error(), tc.err) {
-					t.Errorf("setUpdateData unit test failure %s:\n got error: '%v'\nwant error: '%v'", tc.name, err, tc.err)
+					t.Errorf("setUpdateDomains unit test failure %s:\n got error: '%v'\nwant error: '%v'", tc.name, err, tc.err)
 				}
 			}
 
 			if got != tc.expect {
-				t.Errorf("setUpdateData unit test failure %s:\n got:'%v'\nwant: '%v'", tc.name, got, tc.expect)
+				t.Errorf("setUpdateDomains unit test failure %s:\n got:'%v'\nwant: '%v'", tc.name, got, tc.expect)
 			}
 		})
 	}

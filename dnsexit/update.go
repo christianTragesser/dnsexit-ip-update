@@ -8,8 +8,8 @@ import (
 )
 
 type IPAddrAPI interface {
-	getContent() string
 	egressIP() (string, error)
+	getContent() string
 }
 
 type updateRecord struct {

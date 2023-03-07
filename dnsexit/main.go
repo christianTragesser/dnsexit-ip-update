@@ -31,14 +31,13 @@ func CLI() {
 	}
 
 	// construct DNSExit dynamic update record
-	updateRecordData, err := cmd.setUpdateData()
+	updateRecordData, err := cmd.setUpdateDomains()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	domains := strings.Split(updateRecordData.Name, ",")
-
 	// create an update client for every domain provided in CLI command
+	domains := strings.Split(updateRecordData.Name, ",")
 	clients := make([]client, len(domains))
 
 	for i, d := range domains {
@@ -59,18 +58,28 @@ func CLI() {
 
 func CLIUpdate(clients []client) {
 	if len(clients) > 0 {
-		wg := new(sync.WaitGroup)
+		var interval int
 
+		wg := new(sync.WaitGroup)
 		wg.Add(len(clients))
 
 		for _, c := range clients {
+			var err error
+
+			interval = c.Interval
+
+			c.Record.Content, err = c.setUpdateIP()
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			go c.update(wg)
 		}
 
 		wg.Wait()
 
-		if clients[0].Interval > 0 {
-			time.Sleep(time.Duration(clients[0].Interval) * time.Minute)
+		if interval > 0 {
+			time.Sleep(time.Duration(interval) * time.Minute)
 
 			CLIUpdate(clients)
 		}
