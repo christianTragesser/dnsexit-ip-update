@@ -59,11 +59,9 @@ func (c client) currentRecords() ([]string, error) {
 	if err != nil {
 		clientLogFields["domain"] = c.Record.Name
 		log.WithFields(clientLogFields).Error(err)
-
-		return []string{}, err
 	}
 
-	return ips, nil
+	return ips, err
 }
 
 func (c client) current(currentRecords []string, address string) bool {
@@ -130,7 +128,7 @@ func (c client) update(wg *sync.WaitGroup) {
 
 	currentIPs, err := c.currentRecords()
 	if err != nil {
-		log.Fatal("Unable to resolve the provided domain name.")
+		log.Error("Unable to resolve the provided domain name.")
 	}
 
 	if c.current(currentIPs, c.Record.Content) {
