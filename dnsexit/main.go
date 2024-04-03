@@ -2,8 +2,8 @@ package dnsexit
 
 import (
 	"flag"
-	"strings"
-	"sync"
+	"log/slog"
+	"os"
 	"time"
 )
 
@@ -14,74 +14,83 @@ const (
 	defaultInterval int    = 10
 )
 
+var log = getLogger()
+
+func getLogger() *slog.Logger {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	return logger
+}
+
 func CLI() {
 	// read in CLI parameters
-	cliDomain := flag.String("domain", "", "DNSExit domain name")
+	cliDomains := flag.String("domains", "", "DNSExit domain name(s)")
 	cliKey := flag.String("key", "", "DNSExit API key")
-	cliInterval := flag.Int("interval", defaultInterval, "Time interval in minutes")
 	cliIPAddr := flag.String("ip", "", "Desired A record IP address")
+	cliInterval := flag.Int("interval", 10, "Time interval in minutes")
 
 	flag.Parse()
 
-	cmd := CLICommand{
-		domain:   *cliDomain,
+	s := site{
+		domains:  *cliDomains,
 		key:      *cliKey,
 		interval: *cliInterval,
 		address:  *cliIPAddr,
 	}
 
-	// construct DNSExit dynamic update record
-	updateRecordData, err := cmd.setUpdateDomains()
+	// set domain name(s)
+	domains, err := s.GetDomains()
 	if err != nil {
-		log.Fatal(err)
+		os.Exit(1)
 	}
 
-	// create an update client for every domain provided in CLI command
-	domains := strings.Split(updateRecordData.Name, ",")
-	clients := make([]client, len(domains))
-
-	for i, d := range domains {
-		update := updateRecordData
-		update.Name = d
-
-		client, err := cmd.setClient(update)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		clients[i] = client
+	// set API key
+	apiKey, err := s.GetAPIKey()
+	if err != nil {
+		os.Exit(1)
 	}
 
-	// run clients in persistent loop
-	CLIUpdate(clients)
-}
+	// set IP address
+	ipAddr, err := s.GetIPAddr()
+	if err != nil {
+		os.Exit(1)
+	}
 
-func CLIUpdate(clients []client) {
-	if len(clients) > 0 {
-		var interval int
+	// set update interval
+	interval := s.GetInterval()
 
-		wg := new(sync.WaitGroup)
-		wg.Add(len(clients))
+	// create a dynamic update client for every domain provided
+	clients := make([]client, 0)
 
-		for _, c := range clients {
-			var err error
-
-			interval = c.Interval
-
-			c.Record.Content, err = c.setUpdateIP()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			go c.update(wg)
+	for _, d := range domains {
+		updateRecordData := updateRecord{
+			Type:    recordType,
+			TTL:     recordTTL,
+			Name:    d,
+			Content: ipAddr,
 		}
 
-		wg.Wait()
-
-		if interval > 0 {
-			time.Sleep(time.Duration(interval) * time.Minute)
-
-			CLIUpdate(clients)
+		client := client{
+			url:      apiURL,
+			apiKey:   apiKey,
+			record:   updateRecordData,
+			interval: interval,
 		}
+
+		clients = append(clients, client)
+	}
+
+	// run each client continuously in seperate goroutines
+	channel := make(chan client)
+
+	for _, client := range clients {
+		go keepCurrent(client, channel)
+	}
+
+	for i := range channel {
+		go func(c client) {
+			time.Sleep(time.Duration(c.interval) * time.Minute)
+			keepCurrent(c, channel)
+		}(i)
 	}
 }

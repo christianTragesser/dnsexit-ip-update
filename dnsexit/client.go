@@ -70,6 +70,7 @@ func (c client) ResolveDomain() (string, error) {
 }
 
 func (c client) postUpdate() {
+	// create POST request, send to DNSExit API, check the response
 	var response DNSExitResponse
 
 	jsonPayload, _ := json.Marshal(c.record)
@@ -103,10 +104,12 @@ func (c client) postUpdate() {
 
 	if response.Code != 0 {
 		log.Error(response.Message)
+	} else {
+		log.Info("Successfully updated " + c.record.Name + " A record.")
 	}
 }
 
-func keepCurrent(c client) {
+func keepCurrent(c client, p chan client) {
 	currentAddr, err := c.ResolveDomain()
 	if err != nil {
 		log.Error(err.Error())
@@ -114,7 +117,10 @@ func keepCurrent(c client) {
 
 	if currentAddr == c.record.Content {
 		log.Info(c.record.Name + " site IP address is up to date.")
+		p <- c
 	} else {
+		log.Info("Updating " + c.record.Name + " A record from " + currentAddr + " to " + c.record.Content + ".")
 		c.postUpdate()
+		p <- c
 	}
 }
