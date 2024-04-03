@@ -56,7 +56,6 @@ func (s *site) GetIPAddr() (string, error) {
 	if s.address == "" {
 		s.address, envVarSet = os.LookupEnv("IP_ADDR")
 		if !envVarSet {
-			log.Info("Using network egress IP address for update record.")
 			type responseData struct {
 				IP string `json:"ip"`
 			}
@@ -91,6 +90,8 @@ func (s *site) GetIPAddr() (string, error) {
 				log.Error("Failed to parse egress IP address.")
 				return "", errors.New("egress IP info not found in response body")
 			}
+
+			log.Info("Using network egress IP address (" + data.IP + ") for update record.")
 
 			return data.IP, nil
 		}
