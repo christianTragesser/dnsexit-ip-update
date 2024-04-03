@@ -16,6 +16,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     container: golangci/golangci-lint
+    env:
+      GOFLAGS: -buildvcs=false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
