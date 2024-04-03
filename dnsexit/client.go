@@ -32,46 +32,41 @@ type client struct {
 }
 
 func (c client) ResolveDomain() (string, error) {
-	var resolvedAddrs []string
-	var err error
-
 	// retrieve DNSExit nameservers
 	nameServers, _ := net.LookupNS(c.record.Name)
 
-	// randomize DNSExit nameserver slice
+	// select DNSExit nameserver
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	rng.Shuffle(len(nameServers), func(i, j int) { nameServers[i], nameServers[j] = nameServers[j], nameServers[i] })
+	i := rng.Intn(len(nameServers))
+	host := nameServers[i]
+	ns := host.Host[:len(host.Host)-1]
 
-	for _, ns := range nameServers {
-		// build custom DNS resolver to query DNSExit nameserver
-		r := &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{
-					Timeout: 5000 * time.Millisecond,
-				}
-				return d.DialContext(ctx, "tcp", ns.Host+":53")
-			},
-		}
+	// build custom DNS resolver to query DNSExit nameserver
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: 5000 * time.Millisecond,
+			}
+			return d.DialContext(ctx, "tcp", ns+":53")
+		},
+	}
 
-		log.Info("Using " + ns.Host + " for nameserver.")
+	log.Info("Using " + ns + " to resolve " + c.record.Name + ".")
 
-		// perform DNS lookup for site domain
-		resolvedAddrs, err = r.LookupHost(context.Background(), c.record.Name)
-		if err != nil {
-			log.Error(ns.Host + "failed to resolve " + c.record.Name)
-			continue
-		}
+	// perform DNS lookup for site domain
+	resolvedAddrs, err := r.LookupHost(context.Background(), c.record.Name)
+	if err != nil {
+		log.Error(ns + "failed to resolve " + c.record.Name)
 	}
 
 	if len(resolvedAddrs) == 0 {
 		log.Error("Failed to resolve " + c.record.Name)
 		return "", err
 	} else {
-		log.Info("Resolved " + c.record.Name + " to " + resolvedAddrs[0])
+		log.Info("Resolved domain " + c.record.Name + " to " + resolvedAddrs[0] + ".")
 		return resolvedAddrs[0], nil
 	}
-
 }
 
 func (c client) postUpdate() {
