@@ -2,13 +2,21 @@ package dnsexit
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"errors"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
-	"sync"
+	"time"
 )
+
+type updateRecord struct {
+	Type    string `json:"type"`
+	Name    string `json:"name"`
+	Content string `json:"content"`
+	TTL     int    `json:"ttl"`
+}
 
 type DNSExitResponse struct {
 	Code    int      `json:"code"`
@@ -16,137 +24,102 @@ type DNSExitResponse struct {
 	Message string   `json:"message"`
 }
 
-type clientAPI interface {
-	currentRecords() ([]string, error)
-	getDomain() string
-}
-
 type client struct {
-	URL      string
-	APIKey   string
-	Record   updateRecord
-	Interval int
+	url      string
+	apiKey   string
+	record   updateRecord
+	interval int
 }
 
-func (c client) getDomain() string {
-	return c.Record.Name
-}
-
-func (c client) setUpdateIP() (string, error) {
+func (c client) ResolveDomain() (string, error) {
+	var resolvedAddrs []string
 	var err error
 
-	if c.Record.Content == "" {
-		c.Record.Content, err = getUpdateIP(c.Record)
+	// retrieve DNSExit nameservers
+	nameServers, _ := net.LookupNS(c.record.Name)
+
+	// randomize DNSExit nameserver slice
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rng.Shuffle(len(nameServers), func(i, j int) { nameServers[i], nameServers[j] = nameServers[j], nameServers[i] })
+
+	for _, ns := range nameServers {
+		// build custom DNS resolver to query DNSExit nameserver
+		r := &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{
+					Timeout: 5000 * time.Millisecond,
+				}
+				return d.DialContext(ctx, "tcp", ns.Host+":53")
+			},
+		}
+
+		log.Info("Using " + ns.Host + " for nameserver.")
+
+		// perform DNS lookup for site domain
+		resolvedAddrs, err = r.LookupHost(context.Background(), c.record.Name)
 		if err != nil {
-			log.WithFields(clientLogFields).Error(err)
-
-			return c.Record.Content, err
+			log.Error(ns.Host + "failed to resolve " + c.record.Name)
+			continue
 		}
+	}
+
+	if len(resolvedAddrs) == 0 {
+		log.Error("Failed to resolve " + c.record.Name)
+		return "", err
 	} else {
-		log.WithFields(cliLogFields).Info("Using IP flag value for update status.")
+		log.Info("Resolved " + c.record.Name + " to " + resolvedAddrs[0])
+		return resolvedAddrs[0], nil
 	}
 
-	// test for valid IP address
-	if net.ParseIP(c.Record.Content) == nil {
-		return c.Record.Content, errors.New("Invalid IP address provided to client.")
-	}
-
-	return c.Record.Content, err
 }
 
-func (c client) currentRecords() ([]string, error) {
-	ips, err := resolve(c)
-	if err != nil {
-		clientLogFields["domain"] = c.Record.Name
-		log.WithFields(clientLogFields).Error(err)
-	}
-
-	return ips, err
-}
-
-func (c client) current(currentRecords []string, address string) bool {
-	if len(currentRecords) > 0 {
-		for _, ip := range currentRecords {
-			if ip == address {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func (c client) postUpdate() (DNSExitResponse, error) {
+func (c client) postUpdate() {
 	var response DNSExitResponse
 
-	updatePayload := map[string]updateRecord{"update": c.Record}
-	jsonPayload, _ := json.Marshal(updatePayload)
+	jsonPayload, _ := json.Marshal(c.record)
 	data := bytes.NewReader([]byte(jsonPayload))
 
-	req, err := http.NewRequest("POST", c.URL, data)
+	req, err := http.NewRequest("POST", c.url, data)
 	if err != nil {
-		log.WithFields(clientLogFields).Error("Failed to create HTTP POST to DNSExit API.")
+		log.Error("Failed to create POST method.")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("apikey", c.APIKey)
-	req.Header.Set("domain", c.Record.Name)
+	req.Header.Set("apikey", c.apiKey)
+	req.Header.Set("domain", c.record.Name)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error(err)
-		log.WithFields(clientLogFields).Error("API POST failed for dynamic update.")
-
-		return response, err
+		log.Error("HTTP POST for dynamic update failed.")
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
-		log.WithFields(clientLogFields).Errorln("Failed to read API response body.")
+		log.Error("Failed to read API response body.")
 	}
 
 	err = json.Unmarshal(body, &response)
+	if err != nil {
+		log.Error("Failed to parse API response.")
+	}
 
 	if response.Code != 0 {
-		clientLogFields["status"] = response.Code
-		log.WithFields(clientLogFields).Error(response.Message)
-
-		return response, err
+		log.Error(response.Message)
 	}
-
-	return response, err
 }
 
-func (c client) update(wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	clientLogFields["domain"] = c.Record.Name
-	log.WithFields(clientLogFields).Info("Checking Dynamic DNS status.")
-
-	currentIPs, err := c.currentRecords()
+func keepCurrent(c client) {
+	currentAddr, err := c.ResolveDomain()
 	if err != nil {
-		log.Error("Unable to resolve the provided domain name.")
+		log.Error(err.Error())
 	}
 
-	if c.current(currentIPs, c.Record.Content) {
-		clientLogFields["domain"] = c.Record.Name
-		clientLogFields["IP"] = c.Record.Content
-		clientLogFields["type"] = c.Record.Type
-		log.WithFields(clientLogFields).Info("Dynamic DNS record is up to date.")
+	if currentAddr == c.record.Content {
+		log.Info(c.record.Name + " site IP address is up to date.")
 	} else {
-		response, err := c.postUpdate()
-		if err != nil {
-			log.WithFields(clientLogFields).Error("Dynamic DNS update failed.")
-		}
-
-		if response.Code == 0 && response.Message != "" {
-			clientLogFields["domain"] = c.Record.Name
-			clientLogFields["IP"] = c.Record.Content
-			clientLogFields["type"] = c.Record.Type
-			log.WithFields(clientLogFields).Infoln("Dynamic DNS successfully updated.")
-		}
+		c.postUpdate()
 	}
 }
