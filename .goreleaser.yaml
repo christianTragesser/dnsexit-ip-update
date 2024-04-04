@@ -44,6 +44,8 @@ changelog:
       - '^WIP'
       - 'README'
       - 'attempt'
+      - 'update'
+      - 'log'
 release:
   extra_files:
     - glob: ./dist/{{ .ProjectName }}_darwin_amd64_v1/*
