@@ -8,8 +8,15 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 )
+
+type DNSExitResponse struct {
+	Code    int      `json:"code"`
+	Details []string `json:"details"`
+	Message string   `json:"message"`
+}
 
 type updateRecord struct {
 	Type    string `json:"type"`
@@ -18,22 +25,20 @@ type updateRecord struct {
 	TTL     int    `json:"ttl"`
 }
 
-type DNSExitResponse struct {
-	Code    int      `json:"code"`
-	Details []string `json:"details"`
-	Message string   `json:"message"`
+type update struct {
+	Update updateRecord `json:"update"`
 }
 
 type client struct {
 	url      string
 	apiKey   string
-	record   updateRecord
+	record   update
 	interval int
 }
 
 func (c client) ResolveDomain() (string, error) {
 	// retrieve DNSExit nameservers
-	nameServers, _ := net.LookupNS(c.record.Name)
+	nameServers, _ := net.LookupNS(c.record.Update.Name)
 
 	// select DNSExit nameserver
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -52,19 +57,19 @@ func (c client) ResolveDomain() (string, error) {
 		},
 	}
 
-	log.Info("Using " + ns + " to resolve " + c.record.Name + ".")
+	log.Info("Using " + ns + " to resolve " + c.record.Update.Name + ".")
 
 	// perform DNS lookup for site domain
-	resolvedAddrs, err := r.LookupHost(context.Background(), c.record.Name)
+	resolvedAddrs, err := r.LookupHost(context.Background(), c.record.Update.Name)
 	if err != nil {
-		log.Error(ns + "failed to resolve " + c.record.Name)
+		log.Error(ns + "failed to resolve " + c.record.Update.Name)
 	}
 
 	if len(resolvedAddrs) == 0 {
-		log.Error("Failed to resolve " + c.record.Name)
+		log.Error("Failed to resolve " + c.record.Update.Name)
 		return "", err
 	} else {
-		log.Info("Resolved domain " + c.record.Name + " to " + resolvedAddrs[0] + ".")
+		log.Info("Resolved domain " + c.record.Update.Name + " to " + resolvedAddrs[0] + ".")
 		return resolvedAddrs[0], nil
 	}
 }
@@ -83,7 +88,7 @@ func (c client) postUpdate() {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("apikey", c.apiKey)
-	req.Header.Set("domain", c.record.Name)
+	req.Header.Set("domain", c.record.Update.Name)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -103,9 +108,9 @@ func (c client) postUpdate() {
 	}
 
 	if response.Code != 0 {
-		log.Error(response.Message)
+		log.Error("DNSExit API error: " + strconv.Itoa(response.Code) + " - " + response.Message)
 	} else {
-		log.Info("Successfully updated " + c.record.Name + " A record.")
+		log.Info("Successfully updated " + c.record.Update.Name + " A record.")
 	}
 }
 
@@ -115,11 +120,11 @@ func keepCurrent(c client, p chan client) {
 		log.Error(err.Error())
 	}
 
-	if currentAddr == c.record.Content {
-		log.Info(c.record.Name + " site IP address is up to date.")
+	if currentAddr == c.record.Update.Content {
+		log.Info(c.record.Update.Name + " site IP address is up to date.")
 		p <- c
 	} else {
-		log.Info("Updating " + c.record.Name + " A record from " + currentAddr + " to " + c.record.Content + ".")
+		log.Info("Updating " + c.record.Update.Name + " A record from " + currentAddr + " to " + c.record.Update.Content + ".")
 		c.postUpdate()
 		p <- c
 	}

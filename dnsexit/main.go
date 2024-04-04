@@ -70,10 +70,14 @@ func CLI() {
 			Content: ipAddr,
 		}
 
+		updateData := update{
+			Update: updateRecordData,
+		}
+
 		client := client{
 			url:      apiURL,
 			apiKey:   apiKey,
-			record:   updateRecordData,
+			record:   updateData,
 			interval: interval,
 		}
 
