@@ -41,19 +41,19 @@ func CLI() {
 	// set domain name(s)
 	domains, err := s.GetDomains()
 	if err != nil {
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	// set API key
 	apiKey, err := s.GetAPIKey()
 	if err != nil {
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	// set IP address
 	ipAddr, err := s.GetIPAddr()
 	if err != nil {
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	// set update interval
