@@ -4,7 +4,8 @@
 
 A dynamic DNS client for [DNSExit](https://www.dnsexit.com/) registered domains.
 
-This client was built according to the [DNS API Guide](https://dnsexit.com/dns/dns-api/#guide-to-use).  Currently, only updates to existing `A` records are supported.  
+This client was built according to the [DNS API Guide](https://dnsexit.com/dns/dns-api/#guide-to-use).  
+Currently, only updates to existing `A` records are supported.  
 Before using this client you must create an [DNSExit DNS API key](https://dnsexit.com/dns/dns-api/#apikey).
 
 ## Install
@@ -27,7 +28,7 @@ brew install christiantragesser/tap/dnsexit
 $ dnsexit -h
 Usage of dnsexit:
   -domains string
-    	DNSExit domain name
+    	DNSExit domain names
   -interval int
     	Time interval in minutes (default 10)
   -ip string
@@ -57,7 +58,7 @@ $ docker run -d -e DOMAINS="<dnsexit domain>" -e API_KEY="<API key>" christiantr
 
 ### Options
 **Multiple DNSExit Domains**  
-Multiple DNSExit registered domains can be updated with the same A record information can be managed by providing a comma delimited list of hostnames for the `domains` value.  
+Multiple DNSExit registered domains can be managed by the same A record information by providing a comma deliniated list of hostnames for the `domains` value.  
 ```
 $ dnsexit -domains my-site.com,your-site.io,our-site.net -key <API key>
 ```
