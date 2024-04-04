@@ -38,7 +38,11 @@ type client struct {
 
 func (c client) ResolveDomain() (string, error) {
 	// retrieve DNSExit nameservers
-	nameServers, _ := net.LookupNS(c.record.Update.Name)
+	nameServers, err := net.LookupNS(c.record.Update.Name)
+	if err != nil {
+		log.Error("Failed to retrieve DNSExit nameservers.")
+		return "", err
+	}
 
 	// select DNSExit nameserver
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -118,14 +122,17 @@ func keepCurrent(c client, p chan client) {
 	currentAddr, err := c.ResolveDomain()
 	if err != nil {
 		log.Error(err.Error())
+		p <- c
+		return
 	}
 
 	if currentAddr == c.record.Update.Content {
 		log.Info(c.record.Update.Name + " site IP address is up to date.")
 		p <- c
-	} else {
-		log.Info("Updating " + c.record.Update.Name + " A record from " + currentAddr + " to " + c.record.Update.Content + ".")
-		c.postUpdate()
-		p <- c
+		return
 	}
+
+	log.Info("Updating " + c.record.Update.Name + " A record from " + currentAddr + " to " + c.record.Update.Content + ".")
+	c.postUpdate()
+	p <- c
 }
