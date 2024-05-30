@@ -17,7 +17,7 @@ const (
 var log = getLogger()
 
 func getLogger() *slog.Logger {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	return logger
 }
