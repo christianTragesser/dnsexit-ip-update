@@ -1,4 +1,4 @@
-FROM golang:alpine AS source
+FROM golang:1.24-alpine AS source
 WORKDIR $GOPATH/src/github.com/christiantragesser/dnsexit-ip-update
 ADD go.mod .
 ADD go.sum .

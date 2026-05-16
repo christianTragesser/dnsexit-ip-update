@@ -7,6 +7,9 @@ on:
     paths:
       - 'dnsexit/**'
       - 'pkg/**'
+      - 'main.go'
+      - 'go.mod'
+      - 'go.sum'
     tags-ignore:
       - '**'
 
@@ -15,43 +18,58 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    container: golangci/golangci-lint
     env:
       GOFLAGS: -buildvcs=false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
       - name: Run linter
-        run: golangci-lint run
+        uses: golangci/golangci-lint-action@v9
 
   unit-test:
     runs-on: ubuntu-latest
-    container: golang:bookworm
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
       - name: Run unit tests
-        run: go test -v --cover ./dnsexit
+        run: go test -v -cover ./...
 
   publish:
     needs: [ lint, unit-test ]
     runs-on: ubuntu-latest
     steps:
-      - name: Set env vars
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tag
         id: vars
-        run: echo "::set-output name=sha_short::$(echo ${{ github.sha }} | cut -c1-8 )"
+        run: echo "sha_short=$(echo ${{ github.sha }} | cut -c1-8)" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v4
+
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v7
         with:
+          context: .
           file: "./pkg/Dockerfile"
           push: true
           tags: christiantragesser/dnsexit-ip-update:${{ steps.vars.outputs.sha_short }},christiantragesser/dnsexit-ip-update:latest

@@ -1,100 +1,136 @@
 package dnsexit
 
 import (
+	"context"
 	"flag"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
 const (
 	apiURL          string = "https://api.dnsexit.com/dns/"
-	recordType      string = "A"
-	recordTTL       int    = 480
+	defaultTTL      int    = 5
 	defaultInterval int    = 10
+	minInterval     int    = 5
 )
 
 var log = getLogger()
 
 func getLogger() *slog.Logger {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-	return logger
+	return slog.New(slog.NewTextHandler(os.Stdout, nil))
 }
 
 func CLI() {
-	// read in CLI parameters
-	cliDomains := flag.String("domains", "", "DNSExit domain name(s)")
+	cliDomains := flag.String("domains", "", "DNSExit domain name(s), comma-separated")
 	cliKey := flag.String("key", "", "DNSExit API key")
-	cliIPAddr := flag.String("ip", "", "Desired A record IP address")
-	cliInterval := flag.Int("interval", 10, "Time interval in minutes")
+	cliIPAddr := flag.String("ip", "", "Desired record IP address (auto-discovered if omitted)")
+	cliRecordType := flag.String("record-type", "", "DNS record type: A, AAAA, or SELF (default: A)")
+	cliTTL := flag.Int("ttl", defaultTTL, "Record TTL in minutes")
+	cliInterval := flag.Int("interval", defaultInterval, "Update check interval in minutes (minimum 5)")
 
 	flag.Parse()
 
+	intervalSet, ttlSet := false, false
+	flag.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "interval":
+			intervalSet = true
+		case "ttl":
+			ttlSet = true
+		}
+	})
+
+	httpClient := &http.Client{}
+
 	s := site{
-		domains:  *cliDomains,
-		key:      *cliKey,
-		interval: *cliInterval,
-		address:  *cliIPAddr,
+		domains:     *cliDomains,
+		key:         *cliKey,
+		interval:    *cliInterval,
+		intervalSet: intervalSet,
+		address:     *cliIPAddr,
+		recordType:  *cliRecordType,
+		ttl:         *cliTTL,
+		ttlSet:      ttlSet,
+		httpClient:  httpClient,
 	}
 
-	// set domain name(s)
 	domains, err := s.GetDomains()
 	if err != nil {
-		os.Exit(0)
+		os.Exit(1)
 	}
 
-	// set API key
 	apiKey, err := s.GetAPIKey()
 	if err != nil {
-		os.Exit(0)
+		os.Exit(1)
 	}
 
-	// set IP address
-	ipAddr, err := s.GetIPAddr()
+	recordType, err := s.GetRecordType()
 	if err != nil {
-		os.Exit(0)
+		os.Exit(1)
 	}
 
-	// set update interval
+	ttl := s.GetTTL()
 	interval := s.GetInterval()
 
-	// create a dynamic update client for every domain provided
-	clients := make([]client, 0)
+	// SELF type delegates IP detection to DNSExit server-side; no local IP needed.
+	var ipAddr string
+	var staticIP bool
+	if recordType != recordTypeSelf {
+		ipAddr, staticIP, err = s.GetIPAddr()
+		if err != nil {
+			os.Exit(1)
+		}
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	clients := make([]client, 0, len(domains))
 
 	for _, d := range domains {
-		updateRecordData := updateRecord{
-			Type:    recordType,
-			TTL:     recordTTL,
-			Name:    d,
-			Content: ipAddr,
-		}
-
-		updateData := update{
-			Update: updateRecordData,
-		}
-
-		client := client{
-			url:      apiURL,
-			apiKey:   apiKey,
-			record:   updateData,
+		clients = append(clients, client{
+			url:    apiURL,
+			apiKey: apiKey,
+			record: update{
+				Update: updateRecord{
+					Type:      recordType,
+					TTL:       ttl,
+					Name:      d,
+					Content:   ipAddr,
+					Overwrite: true,
+				},
+			},
 			interval: interval,
-		}
-
-		clients = append(clients, client)
+			staticIP: staticIP || recordType == recordTypeSelf,
+			http:     httpClient,
+			resolver: netResolver{},
+		})
 	}
 
-	// run each client continuously in seperate goroutines
 	channel := make(chan client)
 
-	for _, client := range clients {
-		go keepCurrent(client, channel)
+	for _, c := range clients {
+		go keepCurrent(ctx, c, channel)
 	}
 
-	for i := range channel {
-		go func(c client) {
-			time.Sleep(time.Duration(c.interval) * time.Minute)
-			keepCurrent(c, channel)
-		}(i)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Shutting down.")
+			return
+		case c := <-channel:
+			go func(c client) {
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(time.Duration(c.interval) * time.Minute):
+					keepCurrent(ctx, c, channel)
+				}
+			}(c)
+		}
 	}
 }
