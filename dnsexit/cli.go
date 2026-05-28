@@ -13,6 +13,7 @@ import (
 
 const (
 	apiURL          string = "https://api.dnsexit.com/dns/"
+	udAPIURL        string = "https://api.dnsexit.com/dns/ud/"
 	defaultTTL      int    = 5
 	defaultInterval int    = 10
 	minInterval     int    = 5
@@ -93,7 +94,7 @@ func CLI() {
 
 	for _, d := range domains {
 		clients = append(clients, client{
-			url:    apiURL,
+			url:    udAPIURL,
 			apiKey: apiKey,
 			record: update{
 				Update: updateRecord{

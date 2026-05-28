@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -206,6 +207,53 @@ func (c client) postUpdate() error {
 	}
 }
 
+// redactKey replaces all occurrences of key (raw and URL-encoded) in s with [REDACTED].
+func redactKey(s, key string) string {
+	return strings.NewReplacer(key, "[REDACTED]", url.QueryEscape(key), "[REDACTED]").Replace(s)
+}
+
+func (c client) postUDUpdate() error {
+	params := url.Values{}
+	params.Set("host", c.record.Update.Name)
+	if c.record.Update.Content != "" {
+		params.Set("ip", c.record.Update.Content)
+	}
+
+	reqURL := c.url + "?apikey=" + url.QueryEscape(c.apiKey)
+	req, err := http.NewRequest(http.MethodPost, reqURL, strings.NewReader(params.Encode()))
+	if err != nil {
+		return fmt.Errorf("failed to create POST request: %s", redactKey(err.Error(), c.apiKey))
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("HTTP POST failed: %s", redactKey(err.Error(), c.apiKey))
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read API response: %w", err)
+	}
+
+	var response DNSExitResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return fmt.Errorf("failed to parse API response: %w", err)
+	}
+
+	switch response.Code {
+	case 0:
+		log.Info("Successfully updated " + c.record.Update.Name + " record.")
+		return nil
+	case 1:
+		log.Info(c.record.Update.Name + " record IP unchanged: " + response.Message)
+		return nil
+	default:
+		return fmt.Errorf("DNSExit API error %d: %s", response.Code, response.Message)
+	}
+}
+
 func keepCurrent(ctx context.Context, c client, p chan client) {
 	send := func() {
 		select {
@@ -216,7 +264,7 @@ func keepCurrent(ctx context.Context, c client, p chan client) {
 
 	// SELF type delegates IP detection to DNSExit server-side; no local comparison needed.
 	if c.record.Update.Type == recordTypeSelf {
-		if err := c.postUpdate(); err != nil {
+		if err := c.postUDUpdate(); err != nil {
 			log.Error(err.Error())
 		}
 		send()
@@ -250,7 +298,7 @@ func keepCurrent(ctx context.Context, c client, p chan client) {
 	}
 
 	log.Info("Updating " + c.record.Update.Name + " " + c.record.Update.Type + " record from " + currentAddr + " to " + desiredIP + ".")
-	if err := c.postUpdate(); err != nil {
+	if err := c.postUDUpdate(); err != nil {
 		log.Error(err.Error())
 	}
 	send()
