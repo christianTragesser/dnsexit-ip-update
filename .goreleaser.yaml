@@ -56,7 +56,7 @@ release:
     - glob: ./dist/{{ .ProjectName }}_windows_arm64_v1/*
 brews:
   - name: '{{ .ProjectName }}'
-    tap:
+    repository:
         owner: christiantragesser
         name: homebrew-tap
     folder: Formula
