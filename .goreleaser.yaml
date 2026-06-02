@@ -34,6 +34,9 @@ nfpms:
     maintainer: Christian Tragesser
     description: "A DNSExit dynamic ip address DNS client"
     license: MIT
+    scripts:
+      postinstall: packaging/postinstall.sh
+      preremove: packaging/preremove.sh
 snapshot:
   name_template: '{{ incpatch .Version }}-rc_{{ .ShortCommit }}'
 changelog:
