@@ -61,7 +61,7 @@ brews:
     repository:
         owner: christiantragesser
         name: homebrew-tap
-    folder: Formula
+    directory: Formula
     commit_author:
         name: goreleaserbot
         email: release-bot@evoen.net
